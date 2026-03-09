@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.newsletter.digest</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <!-- Replace INSTALL_DIR with the absolute path to this project -->
+    <string>INSTALL_DIR/venv/bin/python</string>
+    <string>INSTALL_DIR/run.py</string>
+  </array>
+
+  <!-- Run every day at 11:00 AM local time -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>11</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+
+  <key>WorkingDirectory</key>
+  <string>INSTALL_DIR</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>ANTHROPIC_API_KEY</key>
+    <string>REPLACE_WITH_YOUR_KEY</string>
+    <key>DIGEST_RECIPIENT</key>
+    <string>amit.das@think360.ai</string>
+    <key>GMAIL_SENDER</key>
+    <string>amitdas@gmail.com</string>
+    <key>LOG_LEVEL</key>
+    <string>INFO</string>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>INSTALL_DIR/newsletter_agent.log</string>
+  <key>StandardErrorPath</key>
+  <string>INSTALL_DIR/newsletter_agent.log</string>
+
+  <!-- Restart if the job crashes -->
+  <key>KeepAlive</key>
+  <false/>
+</dict>
+</plist>

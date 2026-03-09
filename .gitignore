@@ -1,0 +1,26 @@
+# Secrets — never commit these
+.env
+token.json
+credentials.json
+secrets/
+
+# State files
+sent_digests.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+# Caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Logs
+*.log

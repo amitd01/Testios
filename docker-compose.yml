@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+  newsletter-agent:
+    build: .
+    env_file: .env
+    volumes:
+      # Mount credentials/token — never bake these into the image
+      - ./secrets/credentials.json:/app/credentials.json:ro
+      - ./secrets/token.json:/app/token.json
+      # Persist deduplication state across runs
+      - ./data/sent_digests.json:/app/sent_digests.json
+    restart: "no"   # Run-and-exit; scheduling is handled by the host
