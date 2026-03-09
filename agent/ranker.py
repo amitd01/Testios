@@ -23,61 +23,66 @@ log = logging.getLogger(__name__)
 CLAUDE_MODEL = "claude-sonnet-4-20250514"
 MAX_BODY_CHARS = 3000  # Token budget per email body
 
-_SYSTEM_PROMPT = """\
-You are a sharp newsletter curator with high editorial standards.
-Given newsletter emails, identify substantive articles, write crisp 100-120 word
-summaries, and return ONLY valid JSON (no markdown fences, no backticks, no extra text).\
-"""
+def _build_system_prompt(max_words: int) -> str:
+    min_words = max_words - 50
+    return (
+        "You are a sharp newsletter curator with high editorial standards.\n"
+        f"Given newsletter emails, identify substantive articles, write {min_words}–{max_words} word\n"
+        "summaries, and return ONLY valid JSON (no markdown fences, no backticks, no extra text)."
+    )
 
-_USER_TEMPLATE = """\
-Analyse these {n} newsletter(s) from the last 24 hours.
 
-Rules:
-- Skip pure promotional emails, political campaigns, bounce notifications, or empty digests.
-- One entry per substantive article (a newsletter may contain multiple).
-- Keep summaries between 100 and 120 words.
-- Use the best article URL found in the email body; fall back to the newsletter's web-view URL.
-- Rank 1 = best overall.
-
-Scoring rubric (0–10 each):
-  - originality: Novel angle or non-obvious insight — not just restating existing coverage
-  - real_world_impact: Relevance to business, tech, policy, or daily life
-  - writing_quality: Clarity, voice, and structure
-  - interestingness: Would a smart generalist want to read this?
-
-score = average of the four dimensions.
-
-Return ONLY this JSON structure (no markdown, no commentary):
-{{
-  "articles": [
-    {{
-      "rank":    1,
-      "title":   "Article title",
-      "url":     "https://...",
-      "source":  "Newsletter / author name",
-      "date":    "e.g. March 4, 2026",
-      "summary": "100-120 word summary",
-      "tags":    ["tag1", "tag2"],
-      "score":   7.5,
-      "scores": {{
-        "originality":       8,
-        "real_world_impact": 7,
-        "writing_quality":   8,
-        "interestingness":   7
-      }}
-    }}
-  ],
-  "excluded": [
-    {{
-      "subject":       "Newsletter subject line",
-      "exclude_reason": "One-line reason"
-    }}
-  ]
-}}
-
-NEWSLETTERS:
-{newsletters}\
-"""
+def _build_user_template(max_words: int) -> str:
+    min_words = max_words - 50
+    return (
+        "Analyse these {n} newsletter(s) from the last 24 hours.\n"
+        "\n"
+        "Rules:\n"
+        "- Skip pure promotional emails, political campaigns, bounce notifications, or empty digests.\n"
+        "- One entry per substantive article (a newsletter may contain multiple).\n"
+        f"- Keep summaries between {min_words} and {max_words} words.\n"
+        "- Use the best article URL found in the email body; fall back to the newsletter's web-view URL.\n"
+        "- Rank 1 = best overall.\n"
+        "\n"
+        "Scoring rubric (0–10 each):\n"
+        "  - originality: Novel angle or non-obvious insight — not just restating existing coverage\n"
+        "  - real_world_impact: Relevance to business, tech, policy, or daily life\n"
+        "  - writing_quality: Clarity, voice, and structure\n"
+        "  - interestingness: Would a smart generalist want to read this?\n"
+        "\n"
+        "score = average of the four dimensions.\n"
+        "\n"
+        "Return ONLY this JSON structure (no markdown, no commentary):\n"
+        "{{\n"
+        '  "articles": [\n'
+        "    {{\n"
+        '      "rank":    1,\n'
+        '      "title":   "Article title",\n'
+        '      "url":     "https://...",\n'
+        '      "source":  "Newsletter / author name",\n'
+        '      "date":    "e.g. March 4, 2026",\n'
+        f'      "summary": "{min_words}-{max_words} word summary",\n'
+        '      "tags":    ["tag1", "tag2"],\n'
+        '      "score":   7.5,\n'
+        '      "scores": {{\n'
+        '        "originality":       8,\n'
+        '        "real_world_impact": 7,\n'
+        '        "writing_quality":   8,\n'
+        '        "interestingness":   7\n'
+        "      }}\n"
+        "    }}\n"
+        "  ],\n"
+        '  "excluded": [\n'
+        "    {{\n"
+        '      "subject":       "Newsletter subject line",\n'
+        '      "exclude_reason": "One-line reason"\n'
+        "    }}\n"
+        "  ]\n"
+        "}}\n"
+        "\n"
+        "NEWSLETTERS:\n"
+        "{newsletters}"
+    )
 
 
 def _clean_json(raw: str) -> str:
@@ -135,11 +140,16 @@ def _parse_response(raw: str) -> tuple[list[Article], list[ExcludedItem]]:
     before_sleep=before_sleep_log(log, logging.WARNING),
     reraise=True,
 )
-def _call_claude(client: anthropic.Anthropic, prompt: str) -> str:
+def _call_claude(
+    client: anthropic.Anthropic,
+    prompt: str,
+    system_prompt: str,
+    max_tokens: int,
+) -> str:
     response = client.messages.create(
         model=CLAUDE_MODEL,
-        max_tokens=4096,
-        system=_SYSTEM_PROMPT,
+        max_tokens=max_tokens,
+        system=system_prompt,
         messages=[{"role": "user", "content": prompt}],
     )
     return response.content[0].text
@@ -154,6 +164,10 @@ def summarise_and_rank(
         return [], []
 
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+    max_words = settings.summary_max_words
+    system_prompt = _build_system_prompt(max_words)
+    user_template = _build_user_template(max_words)
+    max_tokens = max(4096, max_words * 30)
 
     blocks: list[str] = []
     for i, nl in enumerate(newsletters, 1):
@@ -166,10 +180,10 @@ def summarise_and_rank(
             f"{nl.body[:MAX_BODY_CHARS]}\n"
         )
 
-    prompt = _USER_TEMPLATE.format(n=len(newsletters), newsletters="\n---\n".join(blocks))
+    prompt = user_template.format(n=len(newsletters), newsletters="\n---\n".join(blocks))
 
     try:
-        raw = _call_claude(client, prompt)
+        raw = _call_claude(client, prompt, system_prompt, max_tokens)
     except anthropic.APIError as exc:
         log.error("Claude API error after retries: %s", exc, exc_info=True)
         return [], []

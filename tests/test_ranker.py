@@ -132,6 +132,7 @@ def _make_settings():
     settings.anthropic_api_key = "test-key"
     settings.digest_recipient = "test@example.com"
     settings.gmail_sender = "sender@gmail.com"
+    settings.summary_max_words = 250
     return settings
 
 
@@ -183,7 +184,7 @@ class TestSummariseAndRank:
         settings = _make_settings()
         captured_prompts: list[str] = []
 
-        def capture(client, prompt):
+        def capture(client, prompt, system_prompt, max_tokens):
             captured_prompts.append(prompt)
             return json.dumps(VALID_RESPONSE)
 

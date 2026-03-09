@@ -34,6 +34,7 @@ SCOPES = ["https://www.googleapis.com/auth/gmail.modify"]
 
 # Newsletter sender domains / patterns for the Gmail search query
 _NEWSLETTER_DOMAINS = [
+    # Publishing platforms
     "substack.com",
     "substackmail.com",
     "beehiiv.com",
@@ -42,6 +43,19 @@ _NEWSLETTER_DOMAINS = [
     "convertkit.com",
     "kit.com",
     "buttondown.email",
+    # Distribution infrastructure
+    "sendgrid.net",
+    "sparkpostmail.com",
+]
+
+# Specific known newsletter senders (email addresses or domains)
+_KNOWN_SENDERS = [
+    "newsletter@farnamstreetblog.com",  # Farnam Street / fs.blog
+    "list@ben-evans.com",               # Benedict Evans
+    "crew@morningbrew.com",             # Morning Brew
+    "a16z.com",                         # a16z (all addresses)
+    "tldr.tech",                        # TLDR newsletter
+    "lennyletter.com",                  # Lenny's Newsletter
 ]
 
 
@@ -84,11 +98,10 @@ def get_gmail_service(settings: Settings):
 
 def _build_query(settings: Settings, since: str) -> str:
     """Build the Gmail search query for newsletter detection."""
-    domain_terms = " OR ".join(f"from:{d}" for d in _NEWSLETTER_DOMAINS)
-    # List-Unsubscribe header is a reliable newsletter signal but Gmail search
-    # doesn't support arbitrary headers; we rely on sender patterns + label.
+    all_senders = _NEWSLETTER_DOMAINS + _KNOWN_SENDERS + settings.newsletter_senders_list
+    sender_terms = " OR ".join(f"from:{s}" for s in all_senders)
     query = (
-        f"({domain_terms} OR label:newsletters) "
+        f"({sender_terms} OR label:newsletters) "
         f"after:{since} "
         f"-label:CATEGORY_PROMOTIONS "
         f"-subject:bounce -subject:\"delivery failure\""

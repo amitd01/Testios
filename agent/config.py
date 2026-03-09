@@ -28,10 +28,20 @@ class Settings(BaseSettings):
     log_format: str = Field("text", description="Log format: 'text' or 'json'")
     sent_digests_file: str = Field("sent_digests.json", description="Deduplication state file")
 
+    # ── Content ────────────────────────────────────────────────────────────────
+    summary_max_words: int = Field(
+        250,
+        description="Target max words per article summary (e.g. 150, 250, 350)",
+    )
+
     # ── Filtering ──────────────────────────────────────────────────────────────
     blocklist_senders: str = Field(
         "",
         description="Comma-separated list of sender addresses/domains to block",
+    )
+    newsletter_senders: str = Field(
+        "",
+        description="Comma-separated extra sender emails/domains to include in the Gmail query",
     )
 
     @field_validator("log_level")
@@ -51,6 +61,13 @@ class Settings(BaseSettings):
         if lower not in valid:
             raise ValueError(f"log_format must be one of {valid}")
         return lower
+
+    @property
+    def newsletter_senders_list(self) -> list[str]:
+        """Return extra newsletter senders as a list, stripping whitespace."""
+        if not self.newsletter_senders:
+            return []
+        return [s.strip() for s in self.newsletter_senders.split(",") if s.strip()]
 
     @property
     def blocklist(self) -> list[str]:
