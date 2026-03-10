@@ -224,7 +224,7 @@ def send_digest(service, html: str, plain_text: str, settings: Settings) -> None
     today = datetime.now().strftime("%B %d, %Y")
 
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"📬 Your Newsletter Digest | Top Reads — {today}"
+    msg["Subject"] = f"Amit's Top Reads — {today}"
     msg["From"] = settings.gmail_sender
     msg["To"] = settings.digest_recipient
 

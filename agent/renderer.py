@@ -44,6 +44,17 @@ body{font-family:Georgia,'Times New Roman',serif;background:#f9f7f4;color:#222;m
 .score-x{background:#a07ab5}   /* interestingness  — purple */
 .score-avg{display:inline-block;background:#555;color:#fff;border-radius:20px;font-size:10px;font-weight:700;padding:2px 8px;margin-left:6px;font-family:Arial,sans-serif}
 
+/* ── Source badges ────────────────────────────── */
+.source-badge{display:inline-block;font-size:10px;font-weight:700;border-radius:3px;padding:2px 7px;margin-left:8px;font-family:Arial,sans-serif;vertical-align:middle}
+.src-email{background:#e8f0fe;color:#1a5276}
+.src-x{background:#e8e8e8;color:#000}
+
+/* ── Quote section ────────────────────────────── */
+.quote-section{padding:24px 36px;border-top:2px solid #1a1a2e;border-bottom:1px solid #f0ede8;background:#fdfcfb}
+.quote-label{margin:0 0 10px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#888;font-family:Arial,sans-serif}
+.quote-body{margin:0 0 10px;padding:0 0 0 16px;border-left:3px solid #1a1a2e;font-size:16px;line-height:1.7;font-style:italic;color:#222}
+.quote-attr{margin:0;font-size:12px;color:#888;font-family:Arial,sans-serif}
+
 /* ── Footer ───────────────────────────────────── */
 .footer{background:#f0ede8;padding:16px 36px;font-size:12px;color:#999;font-family:Arial,sans-serif;text-align:center}
 
@@ -62,7 +73,12 @@ body{font-family:Georgia,'Times New Roman',serif;background:#f9f7f4;color:#222;m
   .meta{color:#888}
   .summary{color:#ccc}
   .tag{background:#3a3a3c;color:#aaa}
+  .quote-section{background:#252527;border-top-color:#a0c4ff}
+  .quote-body{border-left-color:#a0c4ff;color:#ddd}
+  .quote-attr{color:#888}
   .footer{background:#2a2a2c;color:#666}
+  .src-email{background:#1a3a5c;color:#a0c4ff}
+  .src-x{background:#3a3a3c;color:#ccc}
 }
 """
 
@@ -89,7 +105,13 @@ def _anchor_nav(articles: list[Article]) -> str:
     return f'<div class="nav"><strong>Jump to</strong><ol>{items}</ol></div>'
 
 
-def build_html(articles: list[Article], sender: str) -> str:
+def build_html(
+    articles: list[Article],
+    sender: str,
+    teaser: str = "",
+    quote: str = "",
+    quote_attribution: str = "",
+) -> str:
     """Render ranked articles as a clean, dark-mode-safe HTML email."""
     today = datetime.now().strftime("%B %d, %Y")
 
@@ -100,9 +122,13 @@ def build_html(articles: list[Article], sender: str) -> str:
         label = "# 1  BEST READ" if a.rank == 1 else f"# {a.rank}"
         tags_html = "".join(f'<span class="tag">{t}</span>' for t in a.get("tags", []) if isinstance(t, str)) if isinstance(a, dict) else "".join(f'<span class="tag">{t}</span>' for t in a.tags)
         pills = _score_pills(a)
+        if getattr(a, "source_type", "email") == "x":
+            source_badge = '<span class="source-badge src-x">from X</span>'
+        else:
+            source_badge = '<span class="source-badge src-email">from Newsletter</span>'
         rows += f"""
     <div class="article" id="article-{a.rank}">
-      <div class="rank-badge">{label}</div>
+      <div class="rank-badge">{label}</div>{source_badge}
       <h2><a href="{a.url}">{a.title}</a></h2>
       <p class="meta">{a.source} &middot; {a.date}</p>
       <p class="summary">{a.summary}</p>
@@ -110,7 +136,17 @@ def build_html(articles: list[Article], sender: str) -> str:
       <div>{tags_html}</div>
     </div>"""
 
-    count = len(articles)
+    intro_html = f'<div class="intro"><p>{teaser}</p></div>' if teaser else ""
+
+    quote_html = ""
+    if quote:
+        quote_html = f"""
+  <div class="quote-section">
+    <p class="quote-label">Today&#39;s Quotable Quote</p>
+    <blockquote class="quote-body">&#8220;{quote}&#8221;</blockquote>
+    <p class="quote-attr">&#8212; {quote_attribution}</p>
+  </div>"""
+
     return f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -118,14 +154,13 @@ def build_html(articles: list[Article], sender: str) -> str:
 </head><body>
 <div class="container">
   <div class="header">
-    <h1>Newsletter Digest</h1>
-    <p>Curated from your inbox &middot; {today} &middot; Ranked by originality, impact &amp; writing quality</p>
+    <h1>Amit&#39;s Reading List</h1>
+    <p>Curated for you &middot; {today} &middot; The Search for Original, Impactful, Quality Writing</p>
   </div>
   {nav}
-  <div class="intro">
-    <p>{count} article{'s' if count != 1 else ''} reviewed and ranked from newsletters in the last 24 hours.</p>
-  </div>
+  {intro_html}
   {rows}
+  {quote_html}
   <div class="footer">
     Compiled automatically by Newsletter Agent &middot; {sender} &middot; {today}
   </div>
@@ -133,17 +168,25 @@ def build_html(articles: list[Article], sender: str) -> str:
 </body></html>"""
 
 
-def build_plain_text(articles: list[Article]) -> str:
+def build_plain_text(
+    articles: list[Article],
+    teaser: str = "",
+    quote: str = "",
+    quote_attribution: str = "",
+) -> str:
     """Build a minimal plain-text fallback for email clients without HTML support."""
     today = datetime.now().strftime("%B %d, %Y")
     lines = [
-        f"Newsletter Digest — {today}",
+        f"Amit's Reading List — {today}",
         "=" * 48,
         "",
     ]
+    if teaser:
+        lines += [teaser, "", "-" * 48, ""]
     for a in articles:
+        src_tag = "[X]" if getattr(a, "source_type", "email") == "x" else "[Newsletter]"
         lines += [
-            f"#{a.rank} — {a.title}",
+            f"#{a.rank} — {a.title} {src_tag}",
             f"Source: {a.source} | {a.date}",
             f"Score: {a.score:.1f}/10",
             f"URL: {a.url}",
@@ -151,6 +194,13 @@ def build_plain_text(articles: list[Article]) -> str:
             a.summary,
             "",
             "-" * 48,
+            "",
+        ]
+    if quote:
+        lines += [
+            "TODAY'S QUOTABLE QUOTE",
+            f'"{quote}"',
+            f"— {quote_attribution}",
             "",
         ]
     lines.append("Compiled by Newsletter Agent.")

@@ -8,8 +8,7 @@
 
   <key>ProgramArguments</key>
   <array>
-    <!-- Replace INSTALL_DIR with the absolute path to this project -->
-    <string>INSTALL_DIR/venv/bin/python</string>
+    <string>/Library/Frameworks/Python.framework/Versions/3.14/bin/python3</string>
     <string>INSTALL_DIR/run.py</string>
   </array>
 
@@ -25,16 +24,11 @@
   <key>WorkingDirectory</key>
   <string>INSTALL_DIR</string>
 
+  <!-- Secrets are read from .env by pydantic-settings (WorkingDirectory must be set) -->
   <key>EnvironmentVariables</key>
   <dict>
-    <key>ANTHROPIC_API_KEY</key>
-    <string>REPLACE_WITH_YOUR_KEY</string>
-    <key>DIGEST_RECIPIENT</key>
-    <string>amit.das@think360.ai</string>
-    <key>GMAIL_SENDER</key>
-    <string>amitdas@gmail.com</string>
-    <key>LOG_LEVEL</key>
-    <string>INFO</string>
+    <key>PATH</key>
+    <string>/usr/local/bin:/usr/bin:/bin:/Library/Frameworks/Python.framework/Versions/3.14/bin</string>
   </dict>
 
   <key>StandardOutPath</key>

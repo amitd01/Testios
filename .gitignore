@@ -4,8 +4,14 @@ token.json
 credentials.json
 secrets/
 
-# State files
-sent_digests.json
+# State files — state.json contains X auth cookies, never commit
+state.json
+# sent_digests.json is committed so GitHub Actions can persist dedup state
+
+# X scraper outputs
+bookmarks.csv
+likes.csv
+debug_timeout.png
 
 # Python
 __pycache__/

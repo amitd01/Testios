@@ -34,6 +34,12 @@ class Settings(BaseSettings):
         description="Target max words per article summary (e.g. 150, 250, 350)",
     )
 
+    # ── X/Twitter Scraper ───────────────────────────────────────────────────────
+    x_bookmarks_csv: str = Field("bookmarks.csv", description="Path to X bookmarks CSV")
+    x_likes_csv: str = Field("likes.csv", description="Path to X likes CSV")
+    x_username: str = Field("", description="X/Twitter username for likes scraping")
+    x_scroll_attempts: int = Field(25, description="Scroll iterations for X scraping")
+
     # ── Filtering ──────────────────────────────────────────────────────────────
     blocklist_senders: str = Field(
         "",
@@ -78,5 +84,21 @@ class Settings(BaseSettings):
 
 
 def load_settings() -> Settings:
-    """Load and validate settings; raise on missing required vars."""
-    return Settings()
+    """Load and validate settings; raise on missing required vars.
+
+    If the shell has an empty ANTHROPIC_API_KEY (e.g. exported by Claude Desktop
+    as ``ANTHROPIC_API_KEY=``), pydantic-settings would use that empty string
+    instead of the key in .env.  We temporarily remove the empty var so .env wins.
+    """
+    import os
+
+    _sentinel = object()
+    raw = os.environ.get("ANTHROPIC_API_KEY", _sentinel)
+    _removed = raw is not _sentinel and not str(raw).strip()
+    if _removed:
+        del os.environ["ANTHROPIC_API_KEY"]
+    try:
+        return Settings()
+    finally:
+        if _removed:
+            os.environ["ANTHROPIC_API_KEY"] = ""  # restore so we don't mutate caller env

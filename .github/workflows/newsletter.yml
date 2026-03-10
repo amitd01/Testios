@@ -1,0 +1,57 @@
+name: Daily Newsletter Digest
+
+on:
+  schedule:
+    - cron: '30 5 * * *'   # 05:30 UTC = 11:00 AM IST every day
+  workflow_dispatch:         # allow manual trigger from GitHub UI
+
+jobs:
+  send-digest:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write        # needed to commit sent_digests.json back
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install chromium --with-deps
+
+      - name: Restore credentials from secrets
+        env:
+          GMAIL_TOKEN:  ${{ secrets.GMAIL_TOKEN_JSON }}
+          GMAIL_CREDS:  ${{ secrets.GMAIL_CREDENTIALS_JSON }}
+          X_STATE:      ${{ secrets.X_STATE_JSON }}
+        run: |
+          echo "$GMAIL_TOKEN" > token.json
+          echo "$GMAIL_CREDS" > credentials.json
+          echo "$X_STATE"     > state.json
+
+      - name: Run newsletter digest
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DIGEST_RECIPIENT:  ${{ secrets.DIGEST_RECIPIENT }}
+          GMAIL_SENDER:      ${{ secrets.GMAIL_SENDER }}
+          GMAIL_TOKEN_FILE:  token.json
+          GMAIL_CREDS_FILE:  credentials.json
+          LOG_LEVEL:         INFO
+        run: python3 run.py
+
+      - name: Commit updated dedup state
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add sent_digests.json
+          git diff --staged --quiet || git commit -m "chore: update dedup state [skip ci]"
+          git push

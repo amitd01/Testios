@@ -36,7 +36,7 @@ class ScoreBreakdown:
 
 @dataclass
 class Article:
-    """A ranked article extracted from a newsletter."""
+    """A ranked article extracted from a newsletter or X tweet."""
 
     rank: int
     title: str
@@ -44,6 +44,7 @@ class Article:
     source: str
     date: str
     summary: str
+    source_type: str = "email"  # "email" or "x"
     tags: list[str] = field(default_factory=list)
     score: float = 0.0
     scores: ScoreBreakdown = field(default_factory=ScoreBreakdown)

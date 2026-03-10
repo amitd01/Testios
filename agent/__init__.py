@@ -2,49 +2,26 @@
 
 from __future__ import annotations
 
-import json
 import logging
-import os
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from .config import Settings, load_settings
+from .dedup import (
+    already_processed_ids,
+    already_used_urls,
+    load_sent_digests,
+    record_sent_digest,
+    save_sent_digests,
+)
 from .gmail import fetch_newsletters, get_gmail_service, send_digest
 from .models import Article as Article  # noqa: F401 — public re-export
 from .ranker import summarise_and_rank
 from .renderer import build_html, build_plain_text
+from .x_scraper.loader import load_x_data
+from .x_scraper.scraper import main as _scrape_x
 
 log = logging.getLogger(__name__)
-
-_DEDUP_RETENTION_DAYS = 7
-
-
-# ── Deduplication ─────────────────────────────────────────────────────────────
-
-
-def _load_sent_digests(path: str) -> dict:
-    if os.path.exists(path):
-        try:
-            with open(path) as fh:
-                return json.load(fh)
-        except (json.JSONDecodeError, OSError) as exc:
-            log.warning("Could not read %s: %s — starting fresh.", path, exc)
-    return {}
-
-
-def _save_sent_digests(path: str, data: dict) -> None:
-    # Prune entries older than retention window
-    cutoff = (datetime.now() - timedelta(days=_DEDUP_RETENTION_DAYS)).strftime("%Y-%m-%d")
-    pruned = {k: v for k, v in data.items() if k >= cutoff}
-    with open(path, "w") as fh:
-        json.dump(pruned, fh, indent=2)
-
-
-def _already_processed_ids(digests: dict) -> set[str]:
-    ids: set[str] = set()
-    for entry in digests.values():
-        ids.update(entry.get("message_ids", []))
-    return ids
 
 
 # ── Logging setup ──────────────────────────────────────────────────────────────
@@ -89,9 +66,14 @@ def main(dry_run: bool = False) -> None:
     )
 
     # ── Deduplication state ───────────────────────────────────────────────────
-    digests = _load_sent_digests(settings.sent_digests_file)
-    already_processed = _already_processed_ids(digests)
-    log.info("Dedup: %d message IDs already processed.", len(already_processed))
+    digests = load_sent_digests(settings.sent_digests_file)
+    already_processed = already_processed_ids(digests)
+    used_urls = already_used_urls(digests)
+    log.info(
+        "Dedup: %d message IDs, %d article URLs already processed.",
+        len(already_processed),
+        len(used_urls),
+    )
 
     # ── Gmail ─────────────────────────────────────────────────────────────────
     try:
@@ -100,30 +82,58 @@ def main(dry_run: bool = False) -> None:
         log.error("Failed to connect to Gmail: %s", exc, exc_info=True)
         return
 
-    newsletters = fetch_newsletters(service, settings, already_processed)
+    email_newsletters = fetch_newsletters(service, settings, already_processed)
 
-    if not newsletters:
-        log.info("No newsletters found — nothing to send.")
+    # ── X/Twitter scrape ─────────────────────────────────────────────────────
+    import asyncio
+    try:
+        asyncio.run(_scrape_x(
+            headless=True,
+            scroll_attempts=settings.x_scroll_attempts,
+            bookmarks_out=settings.x_bookmarks_csv,
+            likes_out=settings.x_likes_csv,
+        ))
+    except Exception as exc:
+        log.warning("X scrape failed (skipping X content): %s", exc)
+
+    # ── X/Twitter data ────────────────────────────────────────────────────────
+    x_newsletters = load_x_data(
+        settings.x_bookmarks_csv,
+        settings.x_likes_csv,
+        used_urls,
+    )
+
+    # ── Merge sources ─────────────────────────────────────────────────────────
+    all_newsletters = email_newsletters + x_newsletters
+
+    if not all_newsletters:
+        log.info("No content found from emails or X — nothing to send.")
         _finish_log(run_start, found=0, ranked=0, sent=False)
         return
 
+    log.info(
+        "Sources: %d email newsletters, %d X tweets.",
+        len(email_newsletters),
+        len(x_newsletters),
+    )
+
     # ── Claude ────────────────────────────────────────────────────────────────
-    articles, excluded = summarise_and_rank(newsletters, settings)
+    articles, excluded, teaser, quote, quote_attribution = summarise_and_rank(all_newsletters, settings)
 
     if not articles:
         log.info("Claude found no substantive articles — nothing to send.")
-        _finish_log(run_start, found=len(newsletters), ranked=0, sent=False)
+        _finish_log(run_start, found=len(all_newsletters), ranked=0, sent=False)
         return
 
     # ── Build digest ──────────────────────────────────────────────────────────
-    html = build_html(articles, settings.gmail_sender)
-    plain = build_plain_text(articles)
+    html = build_html(articles, settings.gmail_sender, teaser, quote, quote_attribution)
+    plain = build_plain_text(articles, teaser, quote, quote_attribution)
 
     # ── Send or dry-run ───────────────────────────────────────────────────────
     if dry_run:
         print(html)
         log.info("Dry-run: HTML digest printed to stdout. No email sent.")
-        _finish_log(run_start, found=len(newsletters), ranked=len(articles), sent=False)
+        _finish_log(run_start, found=len(all_newsletters), ranked=len(articles), sent=False)
         return
 
     try:
@@ -135,12 +145,12 @@ def main(dry_run: bool = False) -> None:
 
     # ── Update dedup state ────────────────────────────────────────────────────
     if sent:
-        processed_ids = [nl.id for nl in newsletters]
-        digests.setdefault(today_key, {"message_ids": []})
-        digests[today_key]["message_ids"].extend(processed_ids)
-        _save_sent_digests(settings.sent_digests_file, digests)
+        email_ids = [nl.id for nl in email_newsletters]
+        article_urls = [a.url for a in articles]
+        record_sent_digest(digests, today_key, email_ids, article_urls)
+        save_sent_digests(settings.sent_digests_file, digests)
 
-    _finish_log(run_start, found=len(newsletters), ranked=len(articles), sent=sent)
+    _finish_log(run_start, found=len(all_newsletters), ranked=len(articles), sent=sent)
     log.info("=== Newsletter Agent run complete ===")
 
 
@@ -152,7 +162,7 @@ def _finish_log(
 ) -> None:
     duration = time.monotonic() - run_start
     log.info(
-        "Run summary | newsletters_found=%d articles_ranked=%d email_sent=%s duration_s=%.1f",
+        "Run summary | items_found=%d articles_ranked=%d email_sent=%s duration_s=%.1f",
         found,
         ranked,
         sent,

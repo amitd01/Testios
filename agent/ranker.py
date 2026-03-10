@@ -21,27 +21,38 @@ from .models import Article, ExcludedItem, ScoreBreakdown, Newsletter
 log = logging.getLogger(__name__)
 
 CLAUDE_MODEL = "claude-sonnet-4-20250514"
-MAX_BODY_CHARS = 3000  # Token budget per email body
+MAX_BODY_CHARS_EMAIL = 3000  # Token budget per email body
+MAX_BODY_CHARS_TWEET = 500   # Tweets are short
+
 
 def _build_system_prompt(max_words: int) -> str:
     min_words = max_words - 50
     return (
         "You are a sharp newsletter curator with high editorial standards.\n"
-        f"Given newsletter emails, identify substantive articles, write {min_words}–{max_words} word\n"
-        "summaries, and return ONLY valid JSON (no markdown fences, no backticks, no extra text)."
+        "Given a mix of newsletter emails and X/Twitter bookmarks/likes,\n"
+        f"identify substantive articles, write {min_words}–{max_words} word\n"
+        "summaries, craft a punchy editorial teaser, pick a quotable quote,\n"
+        "and return ONLY valid JSON (no markdown fences, no backticks, no extra text)."
     )
 
 
 def _build_user_template(max_words: int) -> str:
     min_words = max_words - 50
     return (
-        "Analyse these {n} newsletter(s) from the last 24 hours.\n"
+        "Analyse these {n} item(s) from the last 24 hours.\n"
+        "Items come from two sources:\n"
+        "- EMAIL: Newsletter emails with full article content and links.\n"
+        "- X/TWITTER: Bookmarked or liked tweets with embedded article links.\n"
         "\n"
         "Rules:\n"
         "- Skip pure promotional emails, political campaigns, bounce notifications, or empty digests.\n"
+        "- For X/TWITTER items, the tweet text provides context about the linked article.\n"
+        "  Use the embedded link as the article URL. Skip tweets with no substantive article link.\n"
         "- One entry per substantive article (a newsletter may contain multiple).\n"
         f"- Keep summaries between {min_words} and {max_words} words.\n"
-        "- Use the best article URL found in the email body; fall back to the newsletter's web-view URL.\n"
+        "- Use the best article URL found in the email body or tweet links;\n"
+        "  fall back to the newsletter's web-view URL.\n"
+        "- In the 'source' field, preserve whether it came from a newsletter or X bookmark/like.\n"
         "- Rank 1 = best overall.\n"
         "\n"
         "Scoring rubric (0–10 each):\n"
@@ -54,6 +65,9 @@ def _build_user_template(max_words: int) -> str:
         "\n"
         "Return ONLY this JSON structure (no markdown, no commentary):\n"
         "{{\n"
+        '  "teaser": "5-6 sentence editorial intro — tease today\'s picks with energy and voice, without naming articles explicitly. Give the reader a reason to keep scrolling.",\n'
+        '  "quote": "A single verbatim, memorable, thought-provoking sentence from one of the ranked articles. Must be a direct quote, not a paraphrase.",\n'
+        '  "quote_attribution": "Short attribution — article title or author name",\n'
         '  "articles": [\n'
         "    {{\n"
         '      "rank":    1,\n'
@@ -80,7 +94,7 @@ def _build_user_template(max_words: int) -> str:
         "  ]\n"
         "}}\n"
         "\n"
-        "NEWSLETTERS:\n"
+        "ITEMS:\n"
         "{newsletters}"
     )
 
@@ -93,8 +107,8 @@ def _clean_json(raw: str) -> str:
     return cleaned.strip()
 
 
-def _parse_response(raw: str) -> tuple[list[Article], list[ExcludedItem]]:
-    """Parse Claude's JSON response into Article and ExcludedItem lists."""
+def _parse_response(raw: str) -> tuple[list[Article], list[ExcludedItem], str, str, str]:
+    """Parse Claude's JSON response into Article and ExcludedItem lists plus teaser/quote."""
     cleaned = _clean_json(raw)
     data = json.loads(cleaned)
 
@@ -107,14 +121,21 @@ def _parse_response(raw: str) -> tuple[list[Article], list[ExcludedItem]]:
             writing_quality=float(scores_raw.get("writing_quality", 0)),
             interestingness=float(scores_raw.get("interestingness", 0)),
         )
+        source_str = str(item.get("source", ""))
+        source_type = (
+            "x"
+            if any(tag in source_str.lower() for tag in ("x bookmark", "x like", "via x"))
+            else "email"
+        )
         articles.append(
             Article(
                 rank=int(item.get("rank", 0)),
                 title=str(item.get("title", "")),
                 url=str(item.get("url", "")),
-                source=str(item.get("source", "")),
+                source=source_str,
                 date=str(item.get("date", "")),
                 summary=str(item.get("summary", "")),
+                source_type=source_type,
                 tags=list(item.get("tags", [])),
                 score=float(item.get("score", breakdown.average)),
                 scores=breakdown,
@@ -130,7 +151,11 @@ def _parse_response(raw: str) -> tuple[list[Article], list[ExcludedItem]]:
             )
         )
 
-    return articles, excluded
+    teaser = str(data.get("teaser", ""))
+    quote = str(data.get("quote", ""))
+    quote_attribution = str(data.get("quote_attribution", ""))
+
+    return articles, excluded, teaser, quote, quote_attribution
 
 
 @retry(
@@ -158,10 +183,10 @@ def _call_claude(
 def summarise_and_rank(
     newsletters: list[Newsletter],
     settings: Settings,
-) -> tuple[list[Article], list[ExcludedItem]]:
-    """Send newsletters to Claude; return (ranked articles, excluded items)."""
+) -> tuple[list[Article], list[ExcludedItem], str, str, str]:
+    """Send newsletters to Claude; return (ranked articles, excluded items, teaser, quote, quote_attribution)."""
     if not newsletters:
-        return [], []
+        return [], [], "", "", ""
 
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     max_words = settings.summary_max_words
@@ -172,12 +197,16 @@ def summarise_and_rank(
     blocks: list[str] = []
     for i, nl in enumerate(newsletters, 1):
         links_str = "; ".join(nl.links) if nl.links else "none"
+        is_x = nl.id.startswith("x:")
+        source_type = "X/TWITTER" if is_x else "EMAIL"
+        body_limit = MAX_BODY_CHARS_TWEET if is_x else MAX_BODY_CHARS_EMAIL
         blocks.append(
-            f"[{i}] FROM: {nl.sender}\n"
+            f"[{i}] TYPE: {source_type}\n"
+            f"FROM: {nl.sender}\n"
             f"SUBJECT: {nl.subject}\n"
             f"DATE: {nl.date}\n"
             f"LINKS: {links_str}\n\n"
-            f"{nl.body[:MAX_BODY_CHARS]}\n"
+            f"{nl.body[:body_limit]}\n"
         )
 
     prompt = user_template.format(n=len(newsletters), newsletters="\n---\n".join(blocks))
@@ -186,21 +215,21 @@ def summarise_and_rank(
         raw = _call_claude(client, prompt, system_prompt, max_tokens)
     except anthropic.APIError as exc:
         log.error("Claude API error after retries: %s", exc, exc_info=True)
-        return [], []
+        return [], [], "", "", ""
 
     try:
-        articles, excluded = _parse_response(raw)
+        articles, excluded, teaser, quote, quote_attribution = _parse_response(raw)
     except (json.JSONDecodeError, KeyError, ValueError) as exc:
         log.error(
             "Claude returned malformed JSON — skipping send. Error: %s\nRaw response:\n%s",
             exc,
             raw,
         )
-        return [], []
+        return [], [], "", "", ""
 
     if excluded:
         for item in excluded:
             log.info("Excluded by Claude: '%s' — %s", item.subject, item.reason)
 
     log.info("Claude ranked %d article(s), excluded %d.", len(articles), len(excluded))
-    return articles, excluded
+    return articles, excluded, teaser, quote, quote_attribution

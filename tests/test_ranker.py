@@ -34,6 +34,9 @@ class TestCleanJson:
 
 
 VALID_RESPONSE = {
+    "teaser": "Today's picks span AI infrastructure, tax policy, and investigative finance.",
+    "quote": "Open source does not mean open sovereignty.",
+    "quote_attribution": "Test Article",
     "articles": [
         {
             "rank": 1,
@@ -63,12 +66,15 @@ VALID_RESPONSE = {
 
 class TestParseResponse:
     def test_parses_valid_response(self):
-        articles, excluded = _parse_response(json.dumps(VALID_RESPONSE))
+        articles, excluded, teaser, quote, quote_attr = _parse_response(json.dumps(VALID_RESPONSE))
         assert len(articles) == 1
         assert len(excluded) == 1
+        assert "AI infrastructure" in teaser
+        assert quote == "Open source does not mean open sovereignty."
+        assert quote_attr == "Test Article"
 
     def test_article_fields(self):
-        articles, _ = _parse_response(json.dumps(VALID_RESPONSE))
+        articles, *_ = _parse_response(json.dumps(VALID_RESPONSE))
         a = articles[0]
         assert a.rank == 1
         assert a.title == "Test Article"
@@ -77,7 +83,7 @@ class TestParseResponse:
         assert a.tags == ["tech", "ai"]
 
     def test_score_breakdown(self):
-        articles, _ = _parse_response(json.dumps(VALID_RESPONSE))
+        articles, *_ = _parse_response(json.dumps(VALID_RESPONSE))
         s = articles[0].scores
         assert s.originality == 8.0
         assert s.real_world_impact == 8.0
@@ -85,23 +91,23 @@ class TestParseResponse:
         assert s.interestingness == 8.0
 
     def test_excluded_item_fields(self):
-        _, excluded = _parse_response(json.dumps(VALID_RESPONSE))
+        _, excluded, *_ = _parse_response(json.dumps(VALID_RESPONSE))
         assert excluded[0].subject == "Weekly Sale"
         assert "promotional" in excluded[0].reason.lower()
 
     def test_handles_missing_excluded_key(self):
         data = {"articles": VALID_RESPONSE["articles"]}
-        articles, excluded = _parse_response(json.dumps(data))
+        articles, excluded, *_ = _parse_response(json.dumps(data))
         assert len(articles) == 1
         assert excluded == []
 
     def test_handles_missing_articles_key(self):
-        articles, excluded = _parse_response('{"excluded": []}')
+        articles, excluded, *_ = _parse_response('{"excluded": []}')
         assert articles == []
 
     def test_parses_response_with_json_fence(self):
         raw = "```json\n" + json.dumps(VALID_RESPONSE) + "\n```"
-        articles, _ = _parse_response(raw)
+        articles, *_ = _parse_response(raw)
         assert len(articles) == 1
 
     def test_raises_on_malformed_json(self):
@@ -139,25 +145,30 @@ def _make_settings():
 class TestSummariseAndRank:
     def test_returns_empty_for_no_newsletters(self, mocker):
         settings = _make_settings()
-        articles, excluded = summarise_and_rank([], settings)
+        articles, excluded, teaser, quote, quote_attr = summarise_and_rank([], settings)
         assert articles == []
         assert excluded == []
+        assert teaser == ""
+        assert quote == ""
+        assert quote_attr == ""
 
     def test_parses_valid_claude_response(self, mocker):
         settings = _make_settings()
         mock_create = mocker.patch("agent.ranker._call_claude")
         mock_create.return_value = json.dumps(VALID_RESPONSE)
 
-        articles, excluded = summarise_and_rank(_make_newsletters(), settings)
+        articles, excluded, teaser, quote, quote_attr = summarise_and_rank(_make_newsletters(), settings)
         assert len(articles) == 1
         assert articles[0].title == "Test Article"
         assert len(excluded) == 1
+        assert teaser != ""
+        assert quote != ""
 
     def test_returns_empty_on_malformed_json(self, mocker):
         settings = _make_settings()
         mocker.patch("agent.ranker._call_claude", return_value="INVALID JSON {{{{")
 
-        articles, excluded = summarise_and_rank(_make_newsletters(), settings)
+        articles, excluded, *_ = summarise_and_rank(_make_newsletters(), settings)
         assert articles == []
         assert excluded == []
 
@@ -174,7 +185,7 @@ class TestSummariseAndRank:
             ),
         )
 
-        articles, excluded = summarise_and_rank(_make_newsletters(), settings)
+        articles, excluded, *_ = summarise_and_rank(_make_newsletters(), settings)
         assert articles == []
 
     def test_truncates_body_to_max_chars(self, mocker):
@@ -206,4 +217,4 @@ class TestSummariseAndRank:
         assert captured_prompts, "Expected _call_claude to be called"
         prompt = captured_prompts[0]
         # The truncated body should not contain the full 10,000 x's
-        assert "x" * (ranker_module.MAX_BODY_CHARS + 1) not in prompt
+        assert "x" * (ranker_module.MAX_BODY_CHARS_EMAIL + 1) not in prompt
