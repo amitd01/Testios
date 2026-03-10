@@ -1,0 +1,70 @@
+:root {
+  --bg-primary: #0D0F14;
+  --bg-surface: #161A23;
+  --bg-surface-hover: #1C2130;
+  --bg-elevated: #1F2433;
+  --text-primary: #FFFFFF;
+  --text-secondary: #A0A8C0;
+  --text-muted: #6B7280;
+  --accent-blue: #4F8EF7;
+  --accent-blue-hover: #3D7CE5;
+  --accent-green: #2DD882;
+  --accent-amber: #F7A84F;
+  --accent-red: #F76F6F;
+  --border-color: #2A2F3E;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 16px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: var(--accent-blue);
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+input, select, textarea {
+  font-family: inherit;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 14px;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent-blue);
+  outline: none;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}

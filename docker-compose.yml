@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: pfm_india
+      POSTGRES_USER: pfm_user
+      POSTGRES_PASSWORD: pfm_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  backend:
+    build:
+      context: .
+      target: backend
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgresql://pfm_user:pfm_pass@postgres:5432/pfm_india
+      REDIS_URL: redis://redis:6379
+      NODE_ENV: development
+      PORT: 3001
+      FRONTEND_URL: http://localhost:3000
+    depends_on:
+      - postgres
+      - redis
+
+volumes:
+  pgdata:

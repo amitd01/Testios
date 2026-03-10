@@ -1,0 +1,21 @@
+{
+  "name": "pfm-india",
+  "version": "1.0.0",
+  "description": "Personal Finance Manager for India - Email-based data ingestion via Gmail API",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "backend": "npm run dev --workspace=backend",
+    "frontend": "npm run dev --workspace=frontend",
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "test": "npm run test --workspace=backend",
+    "migrate": "npm run migrate --workspace=backend",
+    "lint": "npm run lint --workspace=backend && npm run lint --workspace=frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
