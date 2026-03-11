@@ -13,7 +13,7 @@ export default function Onboarding() {
     setScanning(true);
     setError(null);
     try {
-      const result = await api.post('/api/sync/onboarding', { days: 90 });
+      const result = await api.post('/api/sync/onboarding', { days: 30 });
       setScanResult(result.stats);
       setStep(3);
     } catch (err) {
@@ -41,7 +41,7 @@ export default function Onboarding() {
           <>
             <h2 style={styles.heading}>Gmail Connected!</h2>
             <p style={styles.desc}>
-              We'll now scan your inbox for the last 90 days to find financial emails from banks, credit cards, billers, and investment platforms.
+              We'll now scan your inbox for the last 30 days to find financial emails from banks, credit cards, billers, and investment platforms.
             </p>
             <div style={styles.infoBox}>
               <p><strong>What we look for:</strong></p>
