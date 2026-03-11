@@ -102,7 +102,33 @@ function validateLLMResponse(parsed, contentType) {
   }
   if (parsed.date) {
     const d = new Date(parsed.date);
-    if (d > new Date()) warnings.push('future_date_detected');
+    const now = new Date();
+    const fiveYearsAgo = new Date();
+    fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+    if (d > now) {
+      warnings.push('future_date_detected');
+      // Auto-fix: null out the date so it falls back to email received date
+      parsed.date = null;
+    }
+    if (d < fiveYearsAgo) {
+      warnings.push('date_too_old');
+      parsed.date = null;
+    }
+  }
+
+  // Reject garbage merchant names from LLM
+  if (parsed.merchant) {
+    const garbageNames = /^(know more|click here|view details?|see more|learn more|check now|pay now|download|unsubscribe|dear customer)$/i;
+    if (garbageNames.test(parsed.merchant.trim())) {
+      warnings.push('garbage_merchant_name');
+      parsed.merchant = null;
+    }
+    // Reject merchant names that are too long (product descriptions)
+    if (parsed.merchant && parsed.merchant.length > 50) {
+      // Try to extract just the first meaningful part
+      parsed.merchant = parsed.merchant.split(/\s+/).slice(0, 3).join(' ');
+      warnings.push('merchant_name_truncated');
+    }
   }
 
   // Compute confidence

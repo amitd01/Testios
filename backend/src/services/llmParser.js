@@ -10,12 +10,22 @@ const CACHE_MAX_SIZE = 500;
 
 const PROMPTS = {
   transaction_alert: {
-    system: 'You are a financial email parser. Extract transaction details from Indian bank/payment alert emails. Return ONLY valid JSON, no markdown.',
+    system: `You are a financial email parser specializing in Indian bank/payment alert emails. Return ONLY valid JSON, no markdown.
+
+CRITICAL RULES:
+- "merchant" must be a short, clean merchant/payee name (e.g., "Amazon", "Swiggy", "Zomato", "Flipkart", "HDFC Life Insurance").
+  - NEVER use email CTA text like "Know More", "Click Here", "View Details", "Pay Now" as merchant names.
+  - NEVER use full product names or order descriptions as merchant names. Extract just the store/company name.
+  - NEVER use the full email subject line as the merchant. Extract just the payee/merchant.
+  - If the email is about a credit card payment, the merchant is where the money was spent, NOT the bank.
+- "date" must be the actual transaction date, NOT copyright dates, promotional dates, or email footer dates. Look for dates near keywords like "on", "dated", "txn date".
+- "transaction_type": Use "debit" for money going OUT (purchases, payments, transfers sent, EMIs, bills paid). Use "credit" for money coming IN (salary, refunds, cashback, deposits, transfers received). Note: "credit card" in the text does NOT mean credit — credit card purchases are DEBITS.
+- "amount" must be a positive number in INR (no sign).`,
     template: (content, context) => `Parse this transaction alert email and extract the following fields as JSON:
 {
   "amount": <number, positive value in INR>,
   "date": "<YYYY-MM-DD>",
-  "merchant": "<merchant/payee name>",
+  "merchant": "<short clean merchant name, 1-4 words max>",
   "account_last4": "<last 4 digits of account/card>",
   "transaction_type": "<debit|credit>",
   "payment_method": "<UPI|NEFT|IMPS|RTGS|Card|ATM|NetBanking|AutoDebit|Other>",

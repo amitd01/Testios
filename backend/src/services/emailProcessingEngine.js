@@ -18,6 +18,32 @@ const User = require('../models/User');
 
 const LLM_CONFIDENCE_THRESHOLD = 50;
 
+/**
+ * Extract merchant name from email subject as a fallback
+ * e.g. "Your Hdfc Bank Credit Card Ending 4141 Towards Amazonin" → "Amazon"
+ */
+function extractMerchantFromSubject(subject) {
+  if (!subject) return null;
+
+  // "towards <merchant>" pattern (HDFC style)
+  const towardsMatch = subject.match(/towards\s+(.+?)(?:\s+on|\s+for|\s+was|\.|,|$)/i);
+  if (towardsMatch) {
+    let merchant = towardsMatch[1].trim();
+    // Clean up trailing "in" from "Amazonin" etc.
+    merchant = merchant.replace(/in$/i, '').trim();
+    if (merchant.length > 1 && merchant.length < 40) return merchant;
+  }
+
+  // "at <merchant>" pattern
+  const atMatch = subject.match(/(?:at|on)\s+([A-Z][A-Za-z0-9\s&.'-]+?)(?:\s+on|\s+for|$)/i);
+  if (atMatch) {
+    const merchant = atMatch[1].trim();
+    if (merchant.length > 1 && merchant.length < 40) return merchant;
+  }
+
+  return null;
+}
+
 class EmailProcessingEngine {
   constructor(userId) {
     this.userId = userId;
@@ -359,6 +385,33 @@ class EmailProcessingEngine {
     }
 
     const parsed = useResult.data;
+
+    // Use email received date as fallback if parsed date is missing or invalid
+    if (!parsed.date || parsed.date === 'null') {
+      const emailDate = rawEmail.received_at || rawEmail.created_at;
+      parsed.date = emailDate
+        ? new Date(emailDate).toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0];
+    }
+
+    // Validate date is not in the future or too old
+    const parsedDate = new Date(parsed.date);
+    const now = new Date();
+    const fiveYearsAgo = new Date();
+    fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+    if (parsedDate > now || parsedDate < fiveYearsAgo) {
+      const emailDate = rawEmail.received_at || rawEmail.created_at;
+      parsed.date = emailDate
+        ? new Date(emailDate).toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0];
+    }
+
+    // Clean up merchant name — use subject-derived merchant as fallback
+    if (!parsed.merchant || parsed.merchant === 'Unknown') {
+      const subjectMerchant = extractMerchantFromSubject(rawEmail.subject);
+      if (subjectMerchant) parsed.merchant = subjectMerchant;
+    }
+
     parsed.category = categorizeTransaction(parsed.merchant);
 
     await Transaction.insertRaw({
