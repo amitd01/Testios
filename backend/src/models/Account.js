@@ -19,12 +19,20 @@ const Account = {
     return result.rows[0];
   },
 
-  async getByUser(userId) {
-    const result = await db.query(
-      'SELECT * FROM accounts WHERE user_id = $1 ORDER BY institution_name',
-      [userId]
-    );
+  async getByUser(userId, { includeHidden = false } = {}) {
+    const query = includeHidden
+      ? 'SELECT * FROM accounts WHERE user_id = $1 ORDER BY institution_name'
+      : 'SELECT * FROM accounts WHERE user_id = $1 AND (hidden = false OR hidden IS NULL) ORDER BY institution_name';
+    const result = await db.query(query, [userId]);
     return result.rows;
+  },
+
+  async updateHidden(accountId, userId, hidden) {
+    const result = await db.query(
+      'UPDATE accounts SET hidden = $1, updated_at = NOW() WHERE id = $2 AND user_id = $3 RETURNING *',
+      [hidden, accountId, userId]
+    );
+    return result.rows[0];
   },
 
   async getById(accountId) {
@@ -77,7 +85,7 @@ const Account = {
          SUM(CASE WHEN account_type IN ('savings', 'current') THEN COALESCE(balance, 0) ELSE 0 END) as bank_balance,
          SUM(CASE WHEN account_type = 'credit_card' THEN COALESCE(balance, 0) ELSE 0 END) as cc_outstanding,
          SUM(CASE WHEN account_type = 'credit_card' THEN COALESCE(credit_limit, 0) ELSE 0 END) as cc_limit
-       FROM accounts WHERE user_id = $1`,
+       FROM accounts WHERE user_id = $1 AND (hidden = false OR hidden IS NULL)`,
       [userId]
     );
     return result.rows[0];

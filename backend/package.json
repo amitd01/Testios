@@ -9,6 +9,8 @@
     "test": "jest --coverage",
     "migrate": "node src/migrations/run.js",
     "migrate:down": "node src/migrations/run.js down",
+    "reset": "node scripts/reset-user-data.js",
+    "reset:full": "node scripts/reset-user-data.js --full",
     "lint": "eslint src/"
   },
   "dependencies": {

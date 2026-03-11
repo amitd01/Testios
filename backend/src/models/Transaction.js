@@ -101,6 +101,41 @@ const Transaction = {
     return result.rows;
   },
 
+  async getById(id, userId) {
+    const result = await db.query(
+      'SELECT * FROM transactions WHERE id = $1 AND user_id = $2',
+      [id, userId]
+    );
+    return result.rows[0];
+  },
+
+  async updateUserOverrides(id, userId, { merchant, category, notes }) {
+    const updates = [];
+    const params = [id, userId];
+    let idx = 3;
+
+    if (merchant !== undefined) {
+      updates.push(`user_merchant_override = $${idx++}`);
+      params.push(merchant);
+    }
+    if (category !== undefined) {
+      updates.push(`user_category_override = $${idx++}`);
+      params.push(category);
+    }
+    if (notes !== undefined) {
+      updates.push(`user_notes = $${idx++}`);
+      params.push(notes);
+    }
+
+    if (updates.length === 0) return null;
+
+    const result = await db.query(
+      `UPDATE transactions SET ${updates.join(', ')} WHERE id = $1 AND user_id = $2 RETURNING *`,
+      params
+    );
+    return result.rows[0];
+  },
+
   async getCount(userId) {
     const result = await db.query(
       'SELECT COUNT(*) as count FROM transactions WHERE user_id = $1',

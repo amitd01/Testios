@@ -7,6 +7,7 @@ const Transaction = require('../models/Transaction');
 async function deduplicateTransactions(userId) {
   const startTime = Date.now();
   const rawTxns = await Transaction.getUnprocessedRaw(userId);
+  console.log(`[Dedup] Found ${rawTxns.length} unprocessed raw transactions for user ${userId}`);
   if (rawTxns.length === 0) return { harmonized: [], stats: { input: 0, output: 0, merged: 0, duration_ms: Date.now() - startTime } };
 
   // Sort by trust (statement_pdf > email_alert)
@@ -68,10 +69,18 @@ async function deduplicateTransactions(userId) {
   }
 
   // Insert harmonized transactions
+  console.log(`[Dedup] Inserting ${harmonized.length} harmonized transactions`);
   const results = [];
   for (const txn of harmonized) {
-    const result = await Transaction.insertHarmonized(txn);
-    results.push(result);
+    try {
+      const result = await Transaction.insertHarmonized(txn);
+      results.push(result);
+    } catch (err) {
+      console.error(`[Dedup] Failed to insert harmonized txn: ${err.message}`, {
+        merchant: txn.merchant, amount: txn.amount, date: txn.date,
+        transaction_type: txn.transaction_type, sources: txn.sources,
+      });
+    }
   }
 
   const duration_ms = Date.now() - startTime;

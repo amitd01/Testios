@@ -31,13 +31,17 @@ router.get('/api/me', authController.getCurrentUser);
 router.get('/api/dashboard', dashboardController.getDashboard);
 
 // Transactions
-router.get('/api/transactions', transactionController.list);
+router.get('/api/transactions/export', transactionController.exportCsv);
 router.get('/api/transactions/spending', transactionController.spending);
 router.get('/api/transactions/categories', transactionController.categories);
+router.get('/api/transactions/:id', transactionController.getById);
+router.patch('/api/transactions/:id', transactionController.update);
+router.get('/api/transactions', transactionController.list);
 
 // Accounts
 router.get('/api/accounts', accountController.list);
 router.get('/api/accounts/net-worth', accountController.netWorth);
+router.patch('/api/accounts/:id', accountController.update);
 router.get('/api/accounts/:id/transactions', accountController.getTransactions);
 
 // Bills

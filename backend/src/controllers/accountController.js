@@ -3,7 +3,8 @@ const Account = require('../models/Account');
 const accountController = {
   async list(req, res) {
     try {
-      const accounts = await Account.getByUser(req.userId);
+      const includeHidden = req.query.includeHidden === 'true';
+      const accounts = await Account.getByUser(req.userId, { includeHidden });
       res.json({
         accounts: accounts.map(a => ({
           id: a.id,
@@ -15,10 +16,23 @@ const accountController = {
           creditLimit: parseFloat(a.credit_limit) || null,
           utilization: a.credit_limit ? Math.round((Math.abs(a.balance || 0) / a.credit_limit) * 100) : null,
           lastStatementDate: a.last_statement_date,
+          hidden: a.hidden || false,
         })),
       });
     } catch (err) {
       res.status(500).json({ error: 'Failed to fetch accounts' });
+    }
+  },
+
+  async update(req, res) {
+    try {
+      const { hidden } = req.body;
+      if (hidden === undefined) return res.status(400).json({ error: 'Nothing to update' });
+      const account = await Account.updateHidden(req.params.id, req.userId, hidden);
+      if (!account) return res.status(404).json({ error: 'Account not found' });
+      res.json({ account: { id: account.id, hidden: account.hidden } });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to update account' });
     }
   },
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { formatINR, formatDate, getCategoryColor } from '../utils/format';
+import TransactionDetailModal from '../components/TransactionDetailModal';
 
 export default function Transactions() {
   const [transactions, setTransactions] = useState([]);
@@ -8,6 +9,7 @@ export default function Transactions() {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ category: '', search: '', startDate: '', endDate: '' });
   const [offset, setOffset] = useState(0);
+  const [selectedTxn, setSelectedTxn] = useState(null);
   const limit = 30;
 
   useEffect(() => {
@@ -38,6 +40,11 @@ export default function Transactions() {
     setOffset(0);
   };
 
+  const handleTxnUpdate = (updated) => {
+    setTransactions(prev => prev.map(t => t.id === updated.id ? updated : t));
+    setSelectedTxn(updated);
+  };
+
   return (
     <div>
       {/* Filters */}
@@ -56,7 +63,9 @@ export default function Transactions() {
         >
           <option value="">All Categories</option>
           {['Food & Dining', 'Transportation', 'Bills & Utilities', 'Shopping', 'Entertainment',
-            'Healthcare', 'Investments', 'Loan Payments', 'Salary', 'Transfer', 'Uncategorized'].map(cat => (
+            'Healthcare', 'Investments', 'Loan Payments', 'Insurance', 'Education',
+            'Salary', 'Transfer', 'Cash Withdrawal', 'Rent', 'Personal Care',
+            'Gifts & Donations', 'Uncategorized'].map(cat => (
             <option key={cat} value={cat}>{cat}</option>
           ))}
         </select>
@@ -91,46 +100,62 @@ export default function Transactions() {
               </tr>
             </thead>
             <tbody>
-              {transactions.map(txn => (
-                <tr key={txn.id} style={styles.row}>
-                  <td style={styles.td}>{formatDate(txn.date)}</td>
-                  <td style={styles.td}>
-                    <div style={{ fontWeight: 500 }}>{txn.merchant}</div>
-                    {txn.merchantDetail && txn.merchantDetail !== txn.merchant && (
-                      <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{txn.merchantDetail}</div>
-                    )}
-                  </td>
-                  <td style={styles.td}>
-                    <span style={{ ...styles.categoryBadge, background: getCategoryColor(txn.category) + '20', color: getCategoryColor(txn.category) }}>
-                      {txn.category}
-                    </span>
-                  </td>
-                  <td style={styles.td}>
-                    {txn.accountLast4 && (
-                      <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                        ****{txn.accountLast4}
+              {transactions.map(txn => {
+                const needsReview = txn.trustScore < 70 || txn.category === 'Uncategorized';
+                return (
+                  <tr
+                    key={txn.id}
+                    style={{
+                      ...styles.row,
+                      cursor: 'pointer',
+                      ...(needsReview ? { borderLeft: '3px solid var(--accent-amber)' } : {}),
+                    }}
+                    onClick={() => setSelectedTxn(txn)}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-elevated)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <td style={styles.td}>{formatDate(txn.date)}</td>
+                    <td style={styles.td}>
+                      <div style={{ fontWeight: 500 }}>{txn.merchant}</div>
+                      {txn.merchantDetail && txn.merchantDetail !== txn.merchant && (
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{txn.merchantDetail}</div>
+                      )}
+                      {txn.notes && (
+                        <div style={{ fontSize: 11, color: 'var(--accent-blue)', marginTop: 2 }}>{txn.notes}</div>
+                      )}
+                    </td>
+                    <td style={styles.td}>
+                      <span style={{ ...styles.categoryBadge, background: getCategoryColor(txn.category) + '20', color: getCategoryColor(txn.category) }}>
+                        {txn.category}
                       </span>
-                    )}
-                  </td>
-                  <td style={styles.td}>
-                    <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
-                      {txn.sources?.map((src, i) => (
-                        <span key={i} className={`badge ${src === 'statement_pdf' ? 'badge-statement' : 'badge-alert'}`}>
-                          {src === 'email_alert' ? '📧 Alert' : src === 'statement_pdf' ? '📄 PDF' : src}
+                    </td>
+                    <td style={styles.td}>
+                      {txn.accountLast4 && (
+                        <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+                          ****{txn.accountLast4}
                         </span>
-                      ))}
-                      {txn.verified && <span className="badge badge-verified">✓ Verified</span>}
-                    </div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                      Trust: {txn.trustScore}%
-                    </div>
-                  </td>
-                  <td style={{ ...styles.td, textAlign: 'right', fontWeight: 600, fontSize: 14,
-                    color: txn.amount < 0 ? 'var(--accent-red)' : 'var(--accent-green)' }}>
-                    {formatINR(txn.amount)}
-                  </td>
-                </tr>
-              ))}
+                      )}
+                    </td>
+                    <td style={styles.td}>
+                      <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
+                        {txn.sources?.map((src, i) => (
+                          <span key={i} className={`badge ${src === 'statement_pdf' ? 'badge-statement' : 'badge-alert'}`}>
+                            {src === 'email_alert' ? 'Alert' : src === 'statement_pdf' ? 'PDF' : src}
+                          </span>
+                        ))}
+                        {txn.verified && <span className="badge badge-verified">Verified</span>}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                        Trust: {txn.trustScore}%
+                      </div>
+                    </td>
+                    <td style={{ ...styles.td, textAlign: 'right', fontWeight: 600, fontSize: 14,
+                      color: txn.amount < 0 ? 'var(--accent-red)' : 'var(--accent-green)' }}>
+                      {formatINR(txn.amount)}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -157,6 +182,15 @@ export default function Transactions() {
             Next
           </button>
         </div>
+      )}
+
+      {/* Transaction Detail Modal */}
+      {selectedTxn && (
+        <TransactionDetailModal
+          transaction={selectedTxn}
+          onClose={() => setSelectedTxn(null)}
+          onUpdate={handleTxnUpdate}
+        />
       )}
     </div>
   );

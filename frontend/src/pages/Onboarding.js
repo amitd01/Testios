@@ -91,7 +91,7 @@ export default function Onboarding() {
                 <div style={styles.statLabel}>Emails Processed</div>
               </div>
               <div style={styles.stat}>
-                <div style={styles.statValue}>{scanResult?.transactions || scanResult?.parsed || 0}</div>
+                <div style={styles.statValue}>{scanResult?.harmonized || scanResult?.transactions || scanResult?.parsed || 0}</div>
                 <div style={styles.statLabel}>Transactions Found</div>
               </div>
               <div style={styles.stat}>

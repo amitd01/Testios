@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
 import { useApi } from '../hooks/useApi';
 import { Card, StatCard, ProgressBar } from '../components/Card';
 import { formatINR, formatINRShort, formatDate, getCategoryColor } from '../utils/format';
+import TransactionDetailModal from '../components/TransactionDetailModal';
 
 export default function Dashboard() {
   const { data, loading, error } = useApi('/api/dashboard');
+  const [selectedTxn, setSelectedTxn] = useState(null);
 
   if (loading) return <div className="loading">Loading dashboard...</div>;
   if (error) return <div className="empty-state"><h3>Could not load dashboard</h3><p>{error}</p></div>;
@@ -145,7 +147,7 @@ export default function Dashboard() {
           {recentTransactions.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {recentTransactions.map(txn => (
-                <div key={txn.id} style={styles.txnRow}>
+                <div key={txn.id} style={{ ...styles.txnRow, cursor: 'pointer' }} onClick={() => setSelectedTxn(txn)}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 14, fontWeight: 500 }}>{txn.merchant}</div>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 8 }}>
@@ -200,6 +202,15 @@ export default function Dashboard() {
           )}
         </Card>
       </div>
+
+      {/* Transaction Detail Modal */}
+      {selectedTxn && (
+        <TransactionDetailModal
+          transaction={selectedTxn}
+          onClose={() => setSelectedTxn(null)}
+          onUpdate={(updated) => setSelectedTxn(updated)}
+        />
+      )}
     </div>
   );
 }

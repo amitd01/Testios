@@ -157,7 +157,7 @@ class EmailProcessingEngine {
       await SyncRun.complete(this.syncRunId, 'completed', this.errorCounts);
 
       this.logger.info('Sync complete', { stats: this.stats, dedup: dedupResult.stats });
-      return this.stats;
+      return { ...this.stats, harmonized: dedupResult.stats.output, dedupStats: dedupResult.stats };
     } catch (err) {
       this.logger.error('Sync failed', { error: err.message });
       await SyncRun.complete(this.syncRunId, 'failed', { fatal: err.message, ...this.errorCounts });
@@ -851,7 +851,7 @@ class EmailProcessingEngine {
       await SyncRun.complete(this.syncRunId, 'completed', this.errorCounts);
 
       this.logger.info('Re-parse complete', { stats: this.stats, dedup: dedupResult.stats });
-      return this.stats;
+      return { ...this.stats, harmonized: dedupResult.stats.output, dedupStats: dedupResult.stats };
     } catch (err) {
       this.logger.error('Re-parse failed', { error: err.message });
       await SyncRun.complete(this.syncRunId, 'failed', { fatal: err.message, ...this.errorCounts });

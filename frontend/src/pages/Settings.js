@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api, { clearToken } from '../utils/api';
 import { Card } from '../components/Card';
 
@@ -7,6 +7,22 @@ export default function Settings({ user, onSync }) {
   const [syncResult, setSyncResult] = useState(null);
   const [reparsing, setReparsing] = useState(false);
   const [reparseResult, setReparseResult] = useState(null);
+  const [senders, setSenders] = useState([]);
+  const [exporting, setExporting] = useState(false);
+
+  useEffect(() => {
+    loadSenders();
+  }, []);
+
+  const loadSenders = async () => {
+    try {
+      const data = await api.get('/api/admin/senders');
+      setSenders(data.senders || []);
+    } catch (err) {
+      // Fall back to empty — diagnostics-level endpoint may not be accessible
+      console.log('Could not load senders:', err.message);
+    }
+  };
 
   const handleSync = async () => {
     setSyncing(true);
@@ -39,6 +55,29 @@ export default function Settings({ user, onSync }) {
     }
   };
 
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const token = localStorage.getItem('pfm_token');
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/transactions/export`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!response.ok) throw new Error('Export failed');
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'transactions.csv';
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Export failed: ' + err.message);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const handleRevokeAccess = async () => {
     if (!window.confirm('This will permanently delete ALL your data and revoke Gmail access. This action cannot be undone. Continue?')) {
       return;
@@ -46,7 +85,6 @@ export default function Settings({ user, onSync }) {
     try {
       await api.post('/api/revoke', null, { skipAuthRedirect: true });
     } catch (err) {
-      // Ignore auth errors — token/user may already be gone
       if (!err.message.includes('Unauthorized') && !err.message.includes('401')) {
         alert('Failed to revoke access: ' + err.message);
         return;
@@ -82,25 +120,14 @@ export default function Settings({ user, onSync }) {
         </button>
         {syncResult && (
           <div style={{ marginTop: 12, fontSize: 13, color: syncResult.error ? 'var(--accent-red)' : 'var(--accent-green)' }}>
-            {syncResult.error || `Sync complete: ${syncResult.stats?.fetched || 0} emails processed, ${syncResult.stats?.parsed || 0} parsed`}
+            {syncResult.error || `Sync complete: ${syncResult.stats?.fetched || 0} emails processed, ${syncResult.stats?.parsed || 0} parsed, ${syncResult.stats?.harmonized || 0} transactions`}
           </div>
         )}
       </Card>
 
       {/* Email Processing */}
       <Card title="Email Processing" style={{ marginBottom: 20 }}>
-        <div style={styles.settingRow}>
-          <div>
-            <div style={{ fontWeight: 500 }}>Sync Frequency</div>
-            <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>How often to check for new financial emails</div>
-          </div>
-          <select defaultValue="hourly" style={{ minWidth: 120 }}>
-            <option value="hourly">Hourly</option>
-            <option value="daily">Daily</option>
-            <option value="manual">Manual only</option>
-          </select>
-        </div>
-        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16, marginTop: 8 }}>
+        <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: 16, marginBottom: 16 }}>
           <div style={{ fontWeight: 500, marginBottom: 4 }}>Re-parse Emails</div>
           <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>
             Clear all transactions and re-process stored emails with the latest parsing logic.
@@ -111,7 +138,7 @@ export default function Settings({ user, onSync }) {
           </button>
           {reparseResult && (
             <div style={{ marginTop: 12, fontSize: 13, color: reparseResult.error ? 'var(--accent-red)' : 'var(--accent-green)' }}>
-              {reparseResult.error || `Re-parse complete: ${reparseResult.stats?.parsed || 0} parsed, ${reparseResult.stats?.failed || 0} failed`}
+              {reparseResult.error || `Re-parse complete: ${reparseResult.stats?.parsed || 0} parsed, ${reparseResult.stats?.failed || 0} failed, ${reparseResult.stats?.harmonized || 0} transactions created`}
             </div>
           )}
         </div>
@@ -123,12 +150,25 @@ export default function Settings({ user, onSync }) {
           Only emails from these institutional domains are processed. Personal emails are never accessed.
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-          {['hdfcbank.net', 'icicibank.com', 'sbi.co.in', 'axisbank.com', 'kotak.com',
-            'phonepe.com', 'paytm.com', 'bescom.co.in', 'airtel.in', 'camsonline.com',
-            'netflix.com', 'sbicard.com'].map(domain => (
-            <span key={domain} style={styles.domainChip}>{domain}</span>
-          ))}
-          <span style={{ ...styles.domainChip, color: 'var(--accent-blue)', cursor: 'pointer' }}>+ more</span>
+          {senders.length > 0 ? (
+            senders.map(s => (
+              <span key={s.domain} style={styles.domainChip}>
+                {s.domain}
+                <span style={{ marginLeft: 4, fontSize: 10, color: 'var(--text-muted)' }}>
+                  ({s.institution_type || s.institutionType})
+                </span>
+              </span>
+            ))
+          ) : (
+            ['hdfcbank.net', 'icicibank.com', 'sbi.co.in', 'axisbank.com', 'kotak.com',
+             'phonepe.com', 'paytm.com', 'bescom.co.in', 'airtel.in', 'camsonline.com',
+             'netflix.com', 'sbicard.com'].map(domain => (
+              <span key={domain} style={styles.domainChip}>{domain}</span>
+            ))
+          )}
+        </div>
+        <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-muted)' }}>
+          {senders.length > 0 ? `${senders.length} domains configured` : 'Loading from database...'}
         </div>
       </Card>
 
@@ -137,7 +177,9 @@ export default function Settings({ user, onSync }) {
         <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>
           Download your financial data in CSV format
         </p>
-        <button className="btn btn-secondary">Export Transactions (CSV)</button>
+        <button className="btn btn-secondary" onClick={handleExport} disabled={exporting}>
+          {exporting ? 'Exporting...' : 'Export Transactions (CSV)'}
+        </button>
       </Card>
 
       {/* Danger Zone */}
