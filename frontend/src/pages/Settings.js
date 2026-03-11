@@ -44,9 +44,9 @@ export default function Settings({ user, onSync }) {
       return;
     }
     try {
-      await api.post('/api/revoke');
+      await api.post('/api/revoke', null, { skipAuthRedirect: true });
     } catch (err) {
-      // 401 means token/user already gone — that's fine, just log out
+      // Ignore auth errors — token/user may already be gone
       if (!err.message.includes('Unauthorized') && !err.message.includes('401')) {
         alert('Failed to revoke access: ' + err.message);
         return;
