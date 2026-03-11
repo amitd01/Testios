@@ -4,10 +4,12 @@ const { parseTransactionAlert } = require('../parsers/htmlAlertParser');
 const { parseBankStatementPDF, parseCreditCardStatementPDF } = require('../parsers/pdfStatementParser');
 const { parseBillReminder } = require('../parsers/billReminderParser');
 const { parseExcelStatement } = require('../parsers/excelParser');
-const { categorizeTransaction } = require('./categorizationEngine');
+const { categorizeTransaction, categorizeByType } = require('./categorizationEngine');
 const { deduplicateTransactions } = require('./deduplicationEngine');
-const { parseWithLLM, clearCache: clearLLMCache } = require('./llmParser');
+const { parseWithLLM, clearCache: clearLLMCache, mapFinancialTypeToTransactionType } = require('./llmParser');
+const { crossValidate } = require('../utils/regexValidator');
 const { recordSuccess, recordFailure } = require('./templateRegistry');
+const DocumentPassword = require('../models/DocumentPassword');
 const { createLogger } = require('../utils/logger');
 const db = require('../config/database');
 const SyncRun = require('../models/SyncRun');
@@ -363,97 +365,97 @@ class EmailProcessingEngine {
 
   async processTransactionAlert(rawEmail, senderInfo) {
     const body = rawEmail.body_html || rawEmail.body_text;
-
-    // 1. Try regex parser
-    const regexResult = parseTransactionAlert(body, rawEmail.sender, rawEmail.subject, senderInfo);
-    let useResult = regexResult;
     let llmUsed = false;
     let llmTokens = 0;
+    let parserUsed = 'llm';
+    let confidence = 0;
 
-    // 2. If regex fails, low confidence, or missing merchant — try LLM
-    const regexMissingMerchant = regexResult.data && (!regexResult.data.merchant || regexResult.data.merchant === 'Unknown');
-    if (!regexResult.data || regexResult.meta.confidence < LLM_CONFIDENCE_THRESHOLD || regexMissingMerchant) {
-      try {
-        const llmResult = await parseWithLLM(body, 'transaction_alert', {
-          sender: rawEmail.sender,
-          subject: rawEmail.subject,
-        }, this.syncRunId);
+    // ============================================================
+    // LLM-FIRST PIPELINE: Send to LLM with hierarchical v2 prompt
+    // ============================================================
+    let llmData = null;
+    try {
+      const llmResult = await parseWithLLM(body, 'transaction_alert_v2', {
+        sender: rawEmail.sender,
+        subject: rawEmail.subject,
+      }, this.syncRunId);
 
-        llmUsed = true;
-        llmTokens = llmResult.meta.tokens_used || 0;
+      llmUsed = true;
+      llmTokens = llmResult.meta.tokens_used || 0;
+      confidence = llmResult.meta.confidence || 0;
 
-        if (llmResult.data) {
-          const llmData = llmResult.data;
+      if (llmResult.data) {
+        llmData = llmResult.data;
+      }
+    } catch (err) {
+      this.logger.warn('LLM v2 parse failed', { error: err.message, email_id: rawEmail.id });
+    }
 
-          if (regexMissingMerchant && regexResult.data && llmData.merchant) {
-            // Merge: keep regex data (amount, account, balance) but take LLM merchant & date
-            useResult = {
-              data: {
-                ...regexResult.data,
-                merchant: llmData.merchant || regexResult.data.merchant,
-                date: llmData.date || regexResult.data.date,
-                metadata: { ...regexResult.data.metadata, parsed_by: 'hybrid' },
-              },
-              meta: { ...regexResult.meta, parser: 'hybrid', llm_confidence: llmResult.meta.confidence },
-            };
-          } else if (llmResult.meta.confidence > (regexResult.meta?.confidence || 0)) {
-            // Full LLM replacement — LLM was better overall
-            useResult = {
-              data: {
-                amount: llmData.transaction_type === 'debit' ? -Math.abs(llmData.amount) : Math.abs(llmData.amount),
-                date: llmData.date || new Date().toISOString().split('T')[0],
-                merchant: llmData.merchant || 'Unknown',
-                account_last4: llmData.account_last4 || null,
-                account_type: llmData.account_type || 'savings',
-                transaction_type: llmData.transaction_type || 'debit',
-                payment_method: llmData.payment_method || 'Other',
-                balance_after: llmData.balance_after || null,
-                source: 'email_alert',
-                metadata: { sender: rawEmail.sender, institution: senderInfo?.name, parsed_by: 'llm' },
-              },
-              meta: { ...llmResult.meta, parser: 'llm' },
-            };
-          }
-        }
-      } catch (err) {
-        this.logger.warn('LLM fallback failed', { error: err.message, email_id: rawEmail.id });
+    // If LLM failed completely, fall back to regex parser
+    if (!llmData) {
+      const regexResult = parseTransactionAlert(body, rawEmail.sender, rawEmail.subject, senderInfo);
+      if (regexResult.data) {
+        parserUsed = 'htmlAlertParser_fallback';
+        confidence = regexResult.meta.confidence;
+
+        // Map regex result to v2 shape
+        llmData = {
+          type: regexResult.data.transaction_type || 'debit',
+          instrument_type: this.mapAccountTypeToInstrument(regexResult.data.account_type),
+          amount: Math.abs(regexResult.data.amount),
+          date: regexResult.data.date,
+          merchant: regexResult.data.merchant,
+          account_last4: regexResult.data.account_last4,
+          payment_method: regexResult.data.payment_method,
+          balance_after: regexResult.data.balance_after,
+        };
       }
     }
 
-    if (!useResult.data) {
-      return { parserUsed: useResult.meta?.parser || 'htmlAlertParser', llmUsed, llmTokens, confidence: 0, txnCount: 0, details: useResult.meta };
+    if (!llmData || !llmData.amount) {
+      return { parserUsed, llmUsed, llmTokens, confidence: 0, txnCount: 0, details: { error: 'no_data_extracted' } };
     }
 
-    const parsed = useResult.data;
+    // ============================================================
+    // REGEX CROSS-VALIDATION: Validate LLM numbers against regex
+    // ============================================================
+    const { corrected, warnings } = crossValidate(llmData, body);
+    const parsed = corrected;
 
-    // Date resolution for transaction alerts:
-    // For alert emails, the email received date IS the transaction date (banks send alerts immediately).
-    // Use parsed body date only if it's a valid recent past date; otherwise prefer received_at.
+    if (warnings.length > 0) {
+      this.logger.info('Regex cross-validation corrections', { email_id: rawEmail.id, warnings });
+    }
+
+    // ============================================================
+    // DATE RESOLUTION
+    // ============================================================
     const emailDate = rawEmail.received_at || rawEmail.created_at;
     const emailDateStr = emailDate ? new Date(emailDate).toISOString().split('T')[0] : null;
     const todayStr = new Date().toISOString().split('T')[0];
 
     if (!parsed.date || parsed.date === 'null' || parsed.date === todayStr) {
-      // If parsed date is missing or is today (likely a false match from footer), use email date
       parsed.date = emailDateStr || todayStr;
+      parsed.date_source = parsed.date_source || 'header_only';
     }
 
-    // Validate date is not in the future or too old
+    // Validate date bounds
     const parsedDate = new Date(parsed.date);
     const now = new Date();
     const fiveYearsAgo = new Date();
     fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
     if (parsedDate > now || parsedDate < fiveYearsAgo) {
       parsed.date = emailDateStr || todayStr;
+      parsed.date_source = 'header_only';
     }
 
-    // Clean up merchant name — use subject-derived merchant as fallback
+    // ============================================================
+    // MERCHANT CLEANUP
+    // ============================================================
     if (!parsed.merchant || parsed.merchant === 'Unknown') {
       const subjectMerchant = extractMerchantFromSubject(rawEmail.subject);
       if (subjectMerchant) parsed.merchant = subjectMerchant;
     }
 
-    // Final merchant cleanup: strip bank/card preamble that leaked through
     if (parsed.merchant && /\b(credit card|debit card|ending\s+\d{4})\b/i.test(parsed.merchant)) {
       const towards = parsed.merchant.match(/towards\s+(.+)/i);
       if (towards) {
@@ -463,7 +465,7 @@ class EmailProcessingEngine {
       }
     }
 
-    // Title-case the merchant name
+    // Title-case
     if (parsed.merchant && parsed.merchant !== 'Unknown') {
       parsed.merchant = parsed.merchant
         .split(' ')
@@ -471,32 +473,79 @@ class EmailProcessingEngine {
         .join(' ');
     }
 
-    parsed.category = categorizeTransaction(parsed.merchant);
+    // ============================================================
+    // CATEGORIZATION (type-aware)
+    // ============================================================
+    parsed.category = categorizeByType(parsed.type, parsed.instrument_type, parsed.merchant);
+
+    // Map financial type to transaction_type for DB compat
+    const transactionType = mapFinancialTypeToTransactionType(parsed.type || 'debit');
+    const signedAmount = transactionType === 'debit' ? -Math.abs(parsed.amount) : Math.abs(parsed.amount);
+
+    // Map instrument_type to account_type for DB compat
+    const accountType = this.mapInstrumentToAccountType(parsed.instrument_type);
+
+    // ============================================================
+    // PERSIST
+    // ============================================================
+    const account = parsed.account_last4 ? await Account.upsert({
+      userId: this.userId,
+      institutionName: senderInfo?.name || getDomainFromEmail(rawEmail.sender),
+      accountType,
+      instrumentType: parsed.instrument_type,
+      accountLast4: parsed.account_last4,
+      balance: parsed.balance_after,
+    }) : null;
 
     await Transaction.insertRaw({
-      ...parsed,
+      amount: signedAmount,
+      date: parsed.date,
+      merchant: parsed.merchant || 'Unknown',
+      account_last4: parsed.account_last4,
+      account_type: accountType,
+      instrument_type: parsed.instrument_type,
+      financial_type: parsed.type,
+      date_source: parsed.date_source,
+      transaction_type: transactionType,
+      payment_method: parsed.payment_method || 'Other',
+      balance_after: parsed.balance_after,
+      category: parsed.category,
+      source: 'email_alert',
+      account_id: account?.id || null,
+      metadata: {
+        sender: rawEmail.sender,
+        institution: senderInfo?.name,
+        parsed_by: parserUsed,
+        merchant_raw: parsed.merchant_raw,
+        cross_validation_warnings: warnings,
+        extras: parsed.extras,
+      },
       user_id: this.userId,
       email_id: rawEmail.id,
     });
 
-    if (parsed.account_last4) {
-      await Account.upsert({
-        userId: this.userId,
-        institutionName: senderInfo?.name || getDomainFromEmail(rawEmail.sender),
-        accountType: parsed.account_type || 'savings',
-        accountLast4: parsed.account_last4,
-        balance: parsed.balance_after,
-      });
-    }
-
     return {
-      parserUsed: useResult.meta?.parser || 'htmlAlertParser',
+      parserUsed,
       llmUsed,
       llmTokens,
-      confidence: useResult.meta?.confidence || 0,
+      confidence,
       txnCount: 1,
-      details: useResult.meta,
+      details: { warnings, type: parsed.type, instrument: parsed.instrument_type },
     };
+  }
+
+  mapAccountTypeToInstrument(accountType) {
+    const map = { savings: 'savings_account', current: 'current_account', credit_card: 'credit_card' };
+    return map[accountType] || 'savings_account';
+  }
+
+  mapInstrumentToAccountType(instrumentType) {
+    const map = {
+      savings_account: 'savings', current_account: 'current', credit_card: 'credit_card',
+      upi: 'savings', wallet: 'savings', mutual_fund: 'savings', fixed_deposit: 'savings',
+      insurance_policy: 'savings', loan_account: 'savings', demat: 'savings',
+    };
+    return map[instrumentType] || 'savings';
   }
 
   async processStatementPDF(rawEmail, gmail, fullMessage, senderInfo) {
@@ -520,20 +569,36 @@ class EmailProcessingEngine {
       this.attachmentsProcessed++;
 
       const isCC = rawEmail.email_category === 'cc_statement_pdf';
-      const regexResult = isCC
+
+      // First attempt: parse without password
+      let regexResult = isCC
         ? await parseCreditCardStatementPDF(attachResult.buffer)
         : await parseBankStatementPDF(attachResult.buffer);
+
+      // If encrypted, try with stored password
+      if (regexResult.meta?.needs_password) {
+        const domain = getDomainFromEmail(rawEmail.sender);
+        try {
+          const savedPassword = await DocumentPassword.getByDomain(this.userId, domain);
+          if (savedPassword) {
+            this.logger.info('Retrying encrypted PDF with stored password', { domain, email_id: rawEmail.id });
+            regexResult = isCC
+              ? await parseCreditCardStatementPDF(attachResult.buffer, { password: savedPassword.password })
+              : await parseBankStatementPDF(attachResult.buffer, { password: savedPassword.password });
+          }
+        } catch (err) {
+          this.logger.warn('Password-protected PDF retry failed', { error: err.message, domain });
+        }
+      }
 
       let useResult = regexResult;
 
       // LLM fallback for PDF if regex found no transactions
       if (!regexResult.data || regexResult.meta.confidence < LLM_CONFIDENCE_THRESHOLD) {
-        if (regexResult.meta?.error === 'pdf_encrypted' || regexResult.meta?.error === 'pdf_scanned') {
-          // Can't do much with encrypted/scanned PDFs even with LLM
+        if (regexResult.meta?.error === 'pdf_encrypted' || regexResult.meta?.error === 'pdf_scanned' || regexResult.meta?.error === 'pdf_wrong_password') {
           parserUsed = regexResult.meta.parser;
           bestConfidence = 0;
         } else {
-          // Try LLM with the extracted text
           try {
             const pdfParse = require('pdf-parse');
             const pdfData = await pdfParse(attachResult.buffer);
@@ -580,6 +645,7 @@ class EmailProcessingEngine {
           userId: this.userId,
           institutionName: result.institutionName || senderInfo?.name || 'Unknown',
           accountType: isCC ? 'credit_card' : 'savings',
+          instrumentType: isCC ? 'credit_card' : 'savings_account',
           accountLast4,
           balance: isCC ? result.totalDue : result.closingBalance,
           creditLimit: isCC ? result.creditLimit : null,
@@ -629,56 +695,57 @@ class EmailProcessingEngine {
 
   async processBillReminder(rawEmail, senderInfo) {
     const body = rawEmail.body_html || rawEmail.body_text;
-
-    // Regex first
-    const regexResult = parseBillReminder(body, rawEmail.sender, rawEmail.subject, senderInfo);
-    let useResult = regexResult;
     let llmUsed = false;
     let llmTokens = 0;
+    let parserUsed = 'llm';
+    let confidence = 0;
 
-    // LLM fallback
-    if (!regexResult.data || regexResult.meta.confidence < LLM_CONFIDENCE_THRESHOLD) {
-      try {
-        const llmResult = await parseWithLLM(body, 'bill_reminder', {
-          sender: rawEmail.sender,
-          subject: rawEmail.subject,
-        }, this.syncRunId);
+    // LLM-first with hierarchical v2 prompt
+    let billData = null;
+    try {
+      const llmResult = await parseWithLLM(body, 'bill_reminder_v2', {
+        sender: rawEmail.sender,
+        subject: rawEmail.subject,
+      }, this.syncRunId);
 
-        llmUsed = true;
-        llmTokens = llmResult.meta.tokens_used || 0;
+      llmUsed = true;
+      llmTokens = llmResult.meta.tokens_used || 0;
+      confidence = llmResult.meta.confidence || 0;
 
-        if (llmResult.data && llmResult.meta.confidence > (regexResult.meta?.confidence || 0)) {
-          useResult = {
-            data: {
-              ...llmResult.data,
-              source: 'bill_reminder',
-              metadata: { sender: rawEmail.sender },
-            },
-            meta: { ...llmResult.meta, parser: 'llm' },
-          };
-        }
-      } catch (err) {
-        this.logger.warn('LLM bill reminder fallback failed', { error: err.message });
+      if (llmResult.data) {
+        billData = llmResult.data;
+      }
+    } catch (err) {
+      this.logger.warn('LLM bill v2 parse failed', { error: err.message, email_id: rawEmail.id });
+    }
+
+    // Fallback to regex parser
+    if (!billData) {
+      const regexResult = parseBillReminder(body, rawEmail.sender, rawEmail.subject, senderInfo);
+      if (regexResult.data) {
+        billData = regexResult.data;
+        parserUsed = 'billReminderParser_fallback';
+        confidence = regexResult.meta.confidence;
       }
     }
 
-    if (!useResult.data) {
-      return { parserUsed: useResult.meta?.parser || 'billReminderParser', llmUsed, llmTokens, confidence: 0, txnCount: 0, details: useResult.meta };
+    if (!billData || !billData.biller_name) {
+      return { parserUsed, llmUsed, llmTokens, confidence: 0, txnCount: 0, details: { error: 'no_data_extracted' } };
     }
 
     await Bill.create({
-      ...useResult.data,
+      ...billData,
       user_id: this.userId,
       reminder_email_id: rawEmail.id,
     });
 
     return {
-      parserUsed: useResult.meta?.parser || 'billReminderParser',
+      parserUsed,
       llmUsed,
       llmTokens,
-      confidence: useResult.meta?.confidence || 0,
+      confidence,
       txnCount: 0,
-      details: useResult.meta,
+      details: { instrument_type: billData.instrument_type, bill_type: billData.bill_type },
     };
   }
 

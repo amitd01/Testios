@@ -5,7 +5,7 @@ const { parseIndianDate } = require('../utils/indianFormats');
  * Uses pdf-parse to extract text, then regex for transaction lines
  * Returns { data, meta } envelope for observability
  */
-async function parseBankStatementPDF(pdfBuffer) {
+async function parseBankStatementPDF(pdfBuffer, options = {}) {
   const startTime = Date.now();
   const fieldsExtracted = [];
   const fieldsMissing = [];
@@ -14,11 +14,19 @@ async function parseBankStatementPDF(pdfBuffer) {
   const pdfParse = require('pdf-parse');
   let text;
   try {
-    const data = await pdfParse(pdfBuffer);
+    const parseOptions = {};
+    if (options.password) {
+      parseOptions.password = options.password;
+    }
+    const data = await pdfParse(pdfBuffer, parseOptions);
     text = data.text;
   } catch (err) {
     if (err.message?.includes('password')) {
-      return { data: null, meta: { parser: 'pdfStatementParser', duration_ms: Date.now() - startTime, confidence: 0, warnings: ['pdf_encrypted'], error: 'pdf_encrypted' } };
+      // If we already tried with a password, it's wrong
+      if (options.password) {
+        return { data: null, meta: { parser: 'pdfStatementParser', duration_ms: Date.now() - startTime, confidence: 0, warnings: ['pdf_wrong_password'], error: 'pdf_wrong_password' } };
+      }
+      return { data: null, meta: { parser: 'pdfStatementParser', duration_ms: Date.now() - startTime, confidence: 0, warnings: ['pdf_encrypted'], error: 'pdf_encrypted', needs_password: true } };
     }
     throw err;
   }
@@ -55,7 +63,7 @@ async function parseBankStatementPDF(pdfBuffer) {
   };
 }
 
-async function parseCreditCardStatementPDF(pdfBuffer) {
+async function parseCreditCardStatementPDF(pdfBuffer, options = {}) {
   const startTime = Date.now();
   const fieldsExtracted = [];
   const fieldsMissing = [];
@@ -64,11 +72,18 @@ async function parseCreditCardStatementPDF(pdfBuffer) {
   const pdfParse = require('pdf-parse');
   let text;
   try {
-    const data = await pdfParse(pdfBuffer);
+    const parseOptions = {};
+    if (options.password) {
+      parseOptions.password = options.password;
+    }
+    const data = await pdfParse(pdfBuffer, parseOptions);
     text = data.text;
   } catch (err) {
     if (err.message?.includes('password')) {
-      return { data: null, meta: { parser: 'pdfCCParser', duration_ms: Date.now() - startTime, confidence: 0, warnings: ['pdf_encrypted'], error: 'pdf_encrypted' } };
+      if (options.password) {
+        return { data: null, meta: { parser: 'pdfCCParser', duration_ms: Date.now() - startTime, confidence: 0, warnings: ['pdf_wrong_password'], error: 'pdf_wrong_password' } };
+      }
+      return { data: null, meta: { parser: 'pdfCCParser', duration_ms: Date.now() - startTime, confidence: 0, warnings: ['pdf_encrypted'], error: 'pdf_encrypted', needs_password: true } };
     }
     throw err;
   }

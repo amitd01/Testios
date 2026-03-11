@@ -12,6 +12,7 @@ const syncController = require('../controllers/syncController');
 const insightsController = require('../controllers/insightsController');
 const diagnosticsController = require('../controllers/diagnosticsController');
 const senderController = require('../controllers/senderController');
+const settingsController = require('../controllers/settingsController');
 
 const router = express.Router();
 
@@ -37,6 +38,7 @@ router.get('/api/transactions/categories', transactionController.categories);
 // Accounts
 router.get('/api/accounts', accountController.list);
 router.get('/api/accounts/net-worth', accountController.netWorth);
+router.get('/api/accounts/:id/transactions', accountController.getTransactions);
 
 // Bills
 router.get('/api/bills', billController.list);
@@ -85,5 +87,10 @@ router.delete('/api/admin/senders/:domain', senderController.removeSender);
 router.get('/api/admin/senders/pending', senderController.listPending);
 router.post('/api/admin/senders/pending/:id/approve', senderController.approvePending);
 router.get('/api/admin/templates', senderController.listTemplates);
+
+// Settings - Document Passwords
+router.get('/api/settings/document-passwords', settingsController.listDocumentPasswords);
+router.post('/api/settings/document-passwords', settingsController.upsertDocumentPassword);
+router.delete('/api/settings/document-passwords/:id', settingsController.deleteDocumentPassword);
 
 module.exports = router;

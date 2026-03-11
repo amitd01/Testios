@@ -9,6 +9,7 @@ const accountController = {
           id: a.id,
           institution: a.institution_name,
           type: a.account_type,
+          instrumentType: a.instrument_type,
           last4: a.account_number_last4,
           balance: parseFloat(a.balance) || 0,
           creditLimit: parseFloat(a.credit_limit) || null,
@@ -18,6 +19,46 @@ const accountController = {
       });
     } catch (err) {
       res.status(500).json({ error: 'Failed to fetch accounts' });
+    }
+  },
+
+  async getTransactions(req, res) {
+    try {
+      const { id } = req.params;
+      const { limit = 50, offset = 0, startDate, endDate } = req.query;
+
+      // Verify account belongs to user
+      const account = await Account.getById(id);
+      if (!account || account.user_id !== req.userId) {
+        return res.status(404).json({ error: 'Account not found' });
+      }
+
+      const [transactions, count] = await Promise.all([
+        Account.getTransactions(id, {
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          startDate,
+          endDate,
+        }),
+        Account.getTransactionCount(id),
+      ]);
+
+      res.json({
+        account: {
+          id: account.id,
+          institution: account.institution_name,
+          type: account.account_type,
+          instrumentType: account.instrument_type,
+          last4: account.account_number_last4,
+          balance: parseFloat(account.balance) || 0,
+        },
+        transactions,
+        total: count,
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+      });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to fetch account transactions' });
     }
   },
 

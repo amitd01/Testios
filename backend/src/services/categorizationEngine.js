@@ -96,8 +96,52 @@ function categorizeTransaction(merchant) {
   return 'Uncategorized';
 }
 
+/**
+ * Type-aware categorization: uses financial_type and instrument_type
+ * before falling back to merchant-based keyword matching.
+ */
+function categorizeByType(financialType, instrumentType, merchant) {
+  // Direct type-to-category mappings (override merchant-based)
+  const typeMap = {
+    investment: 'Investments',
+    insurance_premium: 'Insurance',
+    loan_emi: 'Loan Payments',
+    salary: 'Salary',
+    cashback: 'Shopping',  // cashback is typically shopping-related
+    refund: 'Shopping',    // refunds are typically shopping-related
+  };
+
+  if (financialType && typeMap[financialType]) {
+    return typeMap[financialType];
+  }
+
+  // For bill type, use instrument_type to refine
+  if (financialType === 'bill') {
+    const billInstrumentMap = {
+      utility: 'Bills & Utilities',
+      telecom: 'Bills & Utilities',
+      insurance_policy: 'Insurance',
+      subscription: 'Entertainment',
+      loan_account: 'Loan Payments',
+      credit_card: 'Bills & Utilities',
+    };
+    if (instrumentType && billInstrumentMap[instrumentType]) {
+      return billInstrumentMap[instrumentType];
+    }
+    return 'Bills & Utilities';
+  }
+
+  // For transfer type
+  if (financialType === 'transfer') {
+    return 'Transfer';
+  }
+
+  // Fall back to merchant-based categorization
+  return categorizeTransaction(merchant);
+}
+
 function getAllCategories() {
   return Object.keys(CATEGORY_RULES);
 }
 
-module.exports = { categorizeTransaction, getAllCategories, CATEGORY_RULES };
+module.exports = { categorizeTransaction, categorizeByType, getAllCategories, CATEGORY_RULES };

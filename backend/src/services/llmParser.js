@@ -9,6 +9,7 @@ const parseCache = new Map();
 const CACHE_MAX_SIZE = 500;
 
 const PROMPTS = {
+  // Legacy prompt kept for reference — replaced by transaction_alert_v2
   transaction_alert: {
     system: `You are a financial email parser specializing in Indian bank/payment alert emails. Return ONLY valid JSON, no markdown.
 
@@ -37,6 +38,138 @@ CRITICAL RULES:
   "payment_method": "<UPI|NEFT|IMPS|RTGS|Card|ATM|NetBanking|AutoDebit|Other>",
   "balance_after": <number or null>,
   "account_type": "<savings|current|credit_card>"
+}
+
+Sender: ${context.sender || 'unknown'}
+Subject: ${context.subject || 'unknown'}
+
+Email content:
+${content.substring(0, 3000)}`,
+  },
+
+  // ============================================================
+  // HIERARCHICAL PROMPTS (v2) — LLM-first pipeline
+  // ============================================================
+
+  transaction_alert_v2: {
+    system: `You are a financial email parser specializing in Indian bank, credit card, and payment alert emails.
+
+Parse the email HIERARCHICALLY in this order:
+
+STEP 1 — FINANCIAL TYPE: What kind of financial activity is this?
+  - "debit": Money going OUT (purchases, payments, transfers sent, EMIs, bills paid, subscriptions)
+  - "credit": Money coming IN (salary, refunds, cashback, deposits, transfers received, interest credited)
+  - "investment": SIP purchase, mutual fund, stock buy/sell, FD creation
+  - "bill": Bill payment or utility payment
+  - "insurance_premium": Insurance premium payment
+  - "loan_emi": Loan EMI deduction
+  - "refund": Refund of a previous purchase
+  - "cashback": Cashback or reward credit
+  - "salary": Salary or stipend credit
+  - "transfer": Self-transfer or fund transfer between own accounts
+  NOTE: "credit card" in email text does NOT mean the type is "credit". Credit card purchases are type "debit".
+
+STEP 2 — INSTRUMENT TYPE: What financial instrument was used?
+  - "savings_account": Regular bank savings account
+  - "current_account": Business/current account
+  - "credit_card": Credit card transaction
+  - "upi": UPI payment (PhonePe, GPay, Paytm, etc.)
+  - "wallet": Digital wallet (Paytm wallet, Amazon Pay balance, etc.)
+  - "mutual_fund": Mutual fund investment
+  - "fixed_deposit": FD creation or maturity
+  - "insurance_policy": Insurance premium
+  - "loan_account": Loan EMI or disbursement
+  - "demat": Stock/demat account transaction
+  HINTS: Look for "Card ending", "Credit Card" → credit_card. Look for "A/c", "Account" → savings_account or current_account. Look for "UPI" → upi.
+
+STEP 3 — AMOUNT: Extract the INR amount as a positive number (no sign, no currency symbol).
+
+STEP 4 — DATE: Extract the ACTUAL TRANSACTION DATE.
+  CRITICAL DATE RULES:
+  - Look for dates near keywords: "on", "dated", "txn date", "transaction date", "value date", "posting date"
+  - Look for dates immediately before a time like "17-03-2026 15:23:45"
+  - IGNORE: copyright dates ("© 2026"), footer dates, email generation timestamps, year-only mentions
+  - IGNORE: dates in disclaimers, privacy policies, or "registered office" text at the bottom
+  - The transaction date is usually BEFORE today, within the last 30 days
+  - Format: YYYY-MM-DD
+  - "date_source": "body_explicit" if found near a transaction keyword, "body_inferred" if found but not near a keyword, "subject" if only in subject line
+
+STEP 5 — MERCHANT / COUNTER-PARTY: Who was the money sent to or received from?
+  CRITICAL MERCHANT RULES:
+  - Extract a SHORT, CLEAN name (1-4 words max): "Amazon", "Swiggy", "Spotify", "HDFC Life"
+  - Strip: "Pvt Ltd", "Private Limited", "India", "Inc", "LLP", "Payments", "Services", "Solutions", "Technologies"
+  - From UPI VPA like "swiggy@ybl" → "Swiggy"; "amazonpay@apl" → "Amazon Pay"
+  - From "towards Amazon Pay In E Commerce Pvt Ltd" → "Amazon Pay"
+  - From "Info: UPI/P2P/ref/swiggy@paytm" → "Swiggy"
+  - NEVER return: CTA text ("Know More", "Click Here", "Pay Now"), bank names as merchants (unless it's a bank fee), email subject text, product descriptions
+  - For salary credits, the merchant is the employer name
+  - "merchant_raw": The original unedited merchant string from the email (for audit)
+
+STEP 6 — ADDITIONAL INFO:
+  - account_last4: Last 4 digits of the account/card number
+  - payment_method: UPI, NEFT, IMPS, RTGS, Card, ATM, NetBanking, AutoDebit, or Other
+  - balance_after: Available balance after transaction (if mentioned)
+  - reference_number: Transaction reference, UPI ref, NEFT ref (if mentioned)
+  - upi_id: Full UPI VPA if mentioned (e.g., "merchant@ybl")
+
+Return ONLY valid JSON, no markdown, no explanation.`,
+    template: (content, context) => `Parse this financial email:
+
+{
+  "type": "<debit|credit|investment|bill|insurance_premium|loan_emi|refund|cashback|salary|transfer>",
+  "instrument_type": "<savings_account|current_account|credit_card|upi|wallet|mutual_fund|fixed_deposit|insurance_policy|loan_account|demat>",
+  "amount": <positive number in INR>,
+  "date": "<YYYY-MM-DD>",
+  "date_source": "<body_explicit|body_inferred|subject>",
+  "merchant": "<short clean name, 1-4 words>",
+  "merchant_raw": "<original string from email>",
+  "account_last4": "<4 digits or null>",
+  "payment_method": "<UPI|NEFT|IMPS|RTGS|Card|ATM|NetBanking|AutoDebit|Other>",
+  "balance_after": <number or null>,
+  "extras": {
+    "reference_number": "<ref or null>",
+    "upi_id": "<vpa or null>"
+  }
+}
+
+Sender: ${context.sender || 'unknown'}
+Subject: ${context.subject || 'unknown'}
+
+Email content:
+${content.substring(0, 3000)}`,
+  },
+
+  bill_reminder_v2: {
+    system: `You are a financial email parser specializing in Indian bill reminders and payment due notifications.
+
+Parse the email HIERARCHICALLY:
+
+STEP 1 — Confirm this is a bill/payment reminder and classify the bill type:
+  - electricity, gas, water, mobile, broadband, dth, insurance, subscription, loan_emi, rent, credit_card_bill, other
+
+STEP 2 — INSTRUMENT TYPE: What is the billing instrument?
+  - "utility": Electricity, gas, water
+  - "telecom": Mobile, broadband, DTH
+  - "insurance_policy": Insurance premium
+  - "subscription": Netflix, Spotify, Amazon Prime, etc.
+  - "loan_account": Loan EMI
+  - "credit_card": Credit card bill
+  - "other": Anything else
+
+STEP 3 — Extract biller name (short clean name), amount, due date, account/consumer number, recurrence.
+
+Return ONLY valid JSON, no markdown.`,
+    template: (content, context) => `Parse this bill reminder email:
+
+{
+  "type": "bill",
+  "instrument_type": "<utility|telecom|insurance_policy|subscription|loan_account|credit_card|other>",
+  "biller_name": "<short clean name>",
+  "bill_type": "<electricity|gas|water|mobile|broadband|dth|insurance|subscription|loan_emi|rent|credit_card_bill|other>",
+  "amount": <number in INR or null>,
+  "due_date": "<YYYY-MM-DD or null>",
+  "account_number": "<account/consumer number or null>",
+  "recurrence": "<monthly|quarterly|yearly|null>"
 }
 
 Sender: ${context.sender || 'unknown'}
@@ -243,4 +376,16 @@ function clearCache() {
   parseCache.clear();
 }
 
-module.exports = { parseWithLLM, PROMPTS, clearCache };
+/**
+ * Map financial_type from LLM to transaction_type for DB compatibility
+ */
+function mapFinancialTypeToTransactionType(financialType) {
+  const debitTypes = ['debit', 'bill', 'insurance_premium', 'loan_emi', 'investment'];
+  const creditTypes = ['credit', 'refund', 'cashback', 'salary'];
+  if (debitTypes.includes(financialType)) return 'debit';
+  if (creditTypes.includes(financialType)) return 'credit';
+  if (financialType === 'transfer') return 'debit'; // transfers show as debit from source
+  return 'debit';
+}
+
+module.exports = { parseWithLLM, PROMPTS, clearCache, mapFinancialTypeToTransactionType };

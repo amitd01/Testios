@@ -4,12 +4,14 @@ const Transaction = {
   async insertRaw(txn) {
     const result = await db.query(
       `INSERT INTO raw_transactions (user_id, email_id, amount, date, merchant, account_last4,
-        account_type, transaction_type, payment_method, balance_after, category, source, metadata)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        account_type, transaction_type, payment_method, balance_after, category, source, metadata,
+        instrument_type, financial_type, date_source, account_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
        RETURNING *`,
       [txn.user_id, txn.email_id, txn.amount, txn.date, txn.merchant, txn.account_last4,
        txn.account_type, txn.transaction_type, txn.payment_method, txn.balance_after,
-       txn.category, txn.source, JSON.stringify(txn.metadata || {})]
+       txn.category, txn.source, JSON.stringify(txn.metadata || {}),
+       txn.instrument_type || null, txn.financial_type || null, txn.date_source || null, txn.account_id || null]
     );
     return result.rows[0];
   },
@@ -18,12 +20,13 @@ const Transaction = {
     const result = await db.query(
       `INSERT INTO transactions (user_id, amount, date, merchant, merchant_detail, category,
         account_last4, account_type, transaction_type, sources, verified, trust_score,
-        raw_transaction_ids, metadata)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        raw_transaction_ids, metadata, instrument_type, financial_type, account_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
        RETURNING *`,
       [txn.user_id, txn.amount, txn.date, txn.merchant, txn.merchant_detail, txn.category,
        txn.account_last4, txn.account_type, txn.transaction_type, txn.sources,
-       txn.verified, txn.trust_score, txn.raw_transaction_ids, JSON.stringify(txn.metadata || {})]
+       txn.verified, txn.trust_score, txn.raw_transaction_ids, JSON.stringify(txn.metadata || {}),
+       txn.instrument_type || null, txn.financial_type || null, txn.account_id || null]
     );
     return result.rows[0];
   },

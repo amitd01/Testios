@@ -53,6 +53,9 @@ async function deduplicateTransactions(userId) {
       category: merged.category || txn.category || 'Uncategorized',
       account_last4: merged.accountLast4,
       account_type: merged.accountType,
+      instrument_type: merged.instrumentType,
+      financial_type: merged.financialType,
+      account_id: merged.accountId,
       transaction_type: merged.transactionType,
       sources: [...new Set(sources)],
       verified: sources.length > 1,
@@ -94,6 +97,10 @@ function isSameTransaction(a, b) {
   // Same transaction direction
   if (a.transaction_type && b.transaction_type && a.transaction_type !== b.transaction_type) return false;
 
+  // Different instrument types = NOT a duplicate
+  // e.g., same amount on savings and credit card on same day are separate transactions
+  if (a.instrument_type && b.instrument_type && a.instrument_type !== b.instrument_type) return false;
+
   return true;
 }
 
@@ -103,6 +110,9 @@ function mergeTransactionData(primary, duplicates) {
   let merchantDetail = null;
   let accountLast4 = primary.account_last4;
   let accountType = primary.account_type;
+  let instrumentType = primary.instrument_type;
+  let financialType = primary.financial_type;
+  let accountId = primary.account_id;
 
   for (const dup of duplicates) {
     // Prefer longer/more specific merchant names from alerts
@@ -112,6 +122,9 @@ function mergeTransactionData(primary, duplicates) {
     // Fill in missing account info
     if (!accountLast4 && dup.account_last4) accountLast4 = dup.account_last4;
     if (!accountType && dup.account_type) accountType = dup.account_type;
+    if (!instrumentType && dup.instrument_type) instrumentType = dup.instrument_type;
+    if (!financialType && dup.financial_type) financialType = dup.financial_type;
+    if (!accountId && dup.account_id) accountId = dup.account_id;
   }
 
   return {
@@ -122,6 +135,9 @@ function mergeTransactionData(primary, duplicates) {
     category: primary.category,
     accountLast4,
     accountType: accountType || 'savings',
+    instrumentType,
+    financialType,
+    accountId,
     transactionType: primary.transaction_type,
     metadata: {
       ...(primary.metadata || {}),
