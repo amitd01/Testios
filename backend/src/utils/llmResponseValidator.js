@@ -140,6 +140,17 @@ function validateLLMResponse(parsed, contentType) {
       if (!parsed.merchant) parsed.merchant = null;
       warnings.push('merchant_name_had_numbers');
     }
+    // Strip company suffixes from LLM-returned merchant names
+    if (parsed.merchant) {
+      parsed.merchant = parsed.merchant
+        .replace(/\s*\.?\s*(?:Pvt|Private|Pte|Ltd|Limited|LLP|Inc|Corp|Co)\b\.?/gi, ' ')
+        .replace(/\s*\.?\s*(?:India|Singapore|Payments?|Services?|Solutions?|Enterprises?|Technologies|Tech)\s*$/i, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      // Strip truncation artifacts
+      parsed.merchant = parsed.merchant.replace(/\.\s+\w{1,4}$/, '').replace(/[.\s]+$/, '').trim();
+      if (!parsed.merchant) parsed.merchant = null;
+    }
     // Reject merchant names that are too long (product descriptions)
     if (parsed.merchant && parsed.merchant.length > 50) {
       parsed.merchant = parsed.merchant.split(/\s+/).slice(0, 3).join(' ');

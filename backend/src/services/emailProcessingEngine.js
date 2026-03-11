@@ -26,23 +26,44 @@ const LLM_CONFIDENCE_THRESHOLD = 50;
 function extractMerchantFromSubject(subject) {
   if (!subject) return null;
 
+  function cleanSubjectMerchant(raw) {
+    if (!raw) return null;
+    let m = raw.trim();
+    // Strip company suffixes and truncated forms
+    m = m
+      .replace(/\s*\.?\s*(?:Pvt|Private|Pte|Ltd|Limited|LLP|Inc|Corp|Co)\b\.?/gi, ' ')
+      .replace(/\s*\.?\s*(?:India|Singapore|Payments?|Services?|Solutions?|Enterprises?|Technologies|Tech)\s*$/i, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    // Strip trailing "in" from "Amazonin" (only when no space before "in")
+    m = m.replace(/([a-z])in$/i, '$1');
+    // Remove truncation artifacts: "Priva", "Limite", ". The", ". Si", etc.
+    m = m.replace(/\s+(?:Priva|Limite|Technolog|Singa|Servi)\w*$/i, '').trim();
+    m = m.replace(/\.\s+\w{1,4}$/, '').trim();
+    m = m.replace(/[.\s]+$/, '').trim();
+    if (m.length > 1 && m.length < 40 && !/\d{4,}/.test(m)) return m;
+    return null;
+  }
+
   // "towards <merchant>" pattern (HDFC style)
-  // e.g. "Your Hdfc Bank Credit Card Ending 4141 Towards Amazon Pay India"
-  const towardsMatch = subject.match(/towards\s+(.+?)(?:\s+on\s+\d|\s+for\s+Rs|\s+was|\.|,|$)/i);
+  const towardsMatch = subject.match(/towards\s+(.+?)(?:\s+on\s+\d|\s+for\s+Rs|\s+was|\s+Amount|$)/i);
   if (towardsMatch) {
-    let merchant = towardsMatch[1].trim();
-    // Clean up trailing "in" from "Amazonin" etc.
-    merchant = merchant.replace(/in$/i, '').trim();
-    // Remove trailing "Priva" truncation artifacts
-    merchant = merchant.replace(/\s+Priva$/i, '').trim();
-    if (merchant.length > 1 && merchant.length < 40 && !/\d{4,}/.test(merchant)) return merchant;
+    const merchant = cleanSubjectMerchant(towardsMatch[1]);
+    if (merchant) return merchant;
   }
 
   // "at <merchant>" pattern
-  const atMatch = subject.match(/(?:spent|paid|purchase[d]?|transacted|used)\s+(?:at|on)\s+([A-Z][A-Za-z0-9\s&.'-]+?)(?:\s+on\s+\d|\s+for|$)/i);
+  const atMatch = subject.match(/(?:spent|paid|purchase[d]?|transacted|used|debited)\s+(?:at|on|for)\s+([A-Za-z][A-Za-z0-9\s&.'-]+?)(?:\s+on\s+\d|\s+for\s+Rs|\s+Amount|$)/i);
   if (atMatch) {
-    const merchant = atMatch[1].trim();
-    if (merchant.length > 1 && merchant.length < 40) return merchant;
+    const merchant = cleanSubjectMerchant(atMatch[1]);
+    if (merchant) return merchant;
+  }
+
+  // "to <merchant>" pattern (ICICI, SBI style: "Rs 500 debited to Swiggy")
+  const toMatch = subject.match(/(?:debited|credited|paid|sent|transferred)\s+(?:to|from|by)\s+([A-Za-z][A-Za-z0-9\s&.'-]+?)(?:\s+on\s+\d|\s+for\s+Rs|\s+Amount|$)/i);
+  if (toMatch) {
+    const merchant = cleanSubjectMerchant(toMatch[1]);
+    if (merchant) return merchant;
   }
 
   return null;

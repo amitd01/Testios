@@ -14,11 +14,17 @@ const PROMPTS = {
 
 CRITICAL RULES:
 - "merchant" must be a short, clean merchant/payee name (e.g., "Amazon", "Swiggy", "Zomato", "Flipkart", "HDFC Life Insurance").
+  - Strip company suffixes: remove "Pvt Ltd", "Private Limited", "Pte Ltd", "India", "Inc", "LLP", "Payments", "Services", "Solutions", "Technologies".
   - NEVER use email CTA text like "Know More", "Click Here", "View Details", "Pay Now" as merchant names.
   - NEVER use full product names or order descriptions as merchant names. Extract just the store/company name.
   - NEVER use the full email subject line as the merchant. Extract just the payee/merchant.
   - If the email is about a credit card payment, the merchant is where the money was spent, NOT the bank.
-- "date" must be the actual transaction date, NOT copyright dates, promotional dates, or email footer dates. Look for dates near keywords like "on", "dated", "txn date".
+  - If you can identify a UPI VPA like "swiggy@ybl", extract "Swiggy" as the merchant.
+  - For "towards" phrases like "towards Amazon Pay In E Commerce Pvt Ltd", extract just "Amazon Pay".
+- "date" must be the actual transaction date from the email body, NOT copyright dates, footer dates, or email generation dates.
+  - Look for dates near keywords like "on", "dated", "txn date", "transaction date".
+  - The date should typically be in the past (within the last 30 days), not today's date.
+  - Format: YYYY-MM-DD.
 - "transaction_type": Use "debit" for money going OUT (purchases, payments, transfers sent, EMIs, bills paid). Use "credit" for money coming IN (salary, refunds, cashback, deposits, transfers received). Note: "credit card" in the text does NOT mean credit — credit card purchases are DEBITS.
 - "amount" must be a positive number in INR (no sign).`,
     template: (content, context) => `Parse this transaction alert email and extract the following fields as JSON:

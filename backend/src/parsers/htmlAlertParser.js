@@ -96,8 +96,12 @@ function extractDate(text) {
 
   // Try context-specific date patterns first (near transaction keywords)
   const contextPatterns = [
-    /(?:on|dated?|txn\s*date|transaction\s*date)[:\s]*(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/i,
-    /(?:on|dated?|txn\s*date|transaction\s*date)[:\s]*(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*[\s,]+(\d{2,4})/i,
+    /(?:on|dated?|txn\s*date|transaction\s*date|value\s*date|posting\s*date)[:\s]*(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/i,
+    /(?:on|dated?|txn\s*date|transaction\s*date|value\s*date|posting\s*date)[:\s]*(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*[\s,]+(\d{2,4})/i,
+    // "11 Mar 2026 at 10:30" — date immediately before time
+    /(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*[\s,]+(\d{2,4})\s+(?:at\s+)?\d{1,2}:\d{2}/i,
+    // "11/03/2026 10:30" — numeric date before time
+    /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})\s+\d{1,2}:\d{2}/i,
   ];
 
   for (const pattern of contextPatterns) {
@@ -124,18 +128,35 @@ function extractDate(text) {
   }
 
   if (candidates.length === 0) return null;
+  if (candidates.length === 1) return candidates[0];
 
-  // Prefer dates closest to today but not in the future
+  // Score each candidate: prefer recent past dates, penalize today/future/very old
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = today.toISOString().split('T')[0];
+
   candidates.sort((a, b) => {
     const da = new Date(a);
     const db = new Date(b);
-    const diffA = Math.abs(today - da);
-    const diffB = Math.abs(today - db);
-    // Penalize future dates
+    da.setHours(0, 0, 0, 0);
+    db.setHours(0, 0, 0, 0);
+
+    // Penalize future dates heavily
     const futA = da > today ? 1e12 : 0;
     const futB = db > today ? 1e12 : 0;
-    return (diffA + futA) - (diffB + futB);
+
+    // Penalize "today" slightly — real txn dates in email body are usually in the past
+    // Copyright/footer dates are often the current year which can resolve to near-today
+    const todayPenaltyA = (a === todayStr) ? 1e6 : 0;
+    const todayPenaltyB = (b === todayStr) ? 1e6 : 0;
+
+    // Prefer dates within last 90 days (likely transaction dates)
+    const daysAgoA = (today - da) / 86400000;
+    const daysAgoB = (today - db) / 86400000;
+    const agePenaltyA = daysAgoA > 90 ? daysAgoA * 1000 : daysAgoA;
+    const agePenaltyB = daysAgoB > 90 ? daysAgoB * 1000 : daysAgoB;
+
+    return (agePenaltyA + futA + todayPenaltyA) - (agePenaltyB + futB + todayPenaltyB);
   });
 
   return candidates[0];
@@ -171,33 +192,55 @@ function extractAccountLast4(text) {
 }
 
 function extractMerchant(text) {
+  // Helper to try cleaning + validating a candidate
+  function tryClean(raw) {
+    if (!raw) return null;
+    const cleaned = cleanMerchantName(raw);
+    if (cleaned && !isGarbageMerchant(cleaned)) return cleaned;
+    return null;
+  }
+
   // UPI reference: UPI/P2P/ref/merchant@handle or UPI-CR-XXXX-merchant
   const upiMatch = text.match(/UPI[\/\-](?:P2[PM]|CR|DR)?[\/\-]?\d*[\/\-]([^\/\s@]+)/i);
   if (upiMatch) {
-    let merchant = upiMatch[1].replace(/@.*/, '').replace(/\d+$/, '').trim();
-    const cleaned = cleanMerchantName(merchant);
-    if (cleaned && !isGarbageMerchant(cleaned)) return cleaned;
+    const r = tryClean(upiMatch[1].replace(/@.*/, '').replace(/\d+$/, '').trim());
+    if (r) return r;
   }
 
   // "towards <merchant>" (common in HDFC emails: "towards Amazonin", "towards Swiggy")
-  const towardsMatch = text.match(/towards\s+([A-Za-z][A-Za-z0-9\s&.'-]{1,40}?)(?:\s+on|\s+for|\s+via|\s+ref|\s+was|\s*\.|,|$)/i);
+  const towardsMatch = text.match(/towards\s+([A-Za-z][A-Za-z0-9\s&.'-]{1,50}?)(?:\s+on\s+\d|\s+for\s+Rs|\s+via\s|\s+ref\s|\s+was\s|,|\s+Amount|$)/i);
   if (towardsMatch) {
-    const cleaned = cleanMerchantName(towardsMatch[1]);
-    if (cleaned && !isGarbageMerchant(cleaned)) return cleaned;
+    const r = tryClean(towardsMatch[1]);
+    if (r) return r;
   }
 
   // "at <merchant>" (common in card transaction alerts)
-  const atMatch = text.match(/(?:spent|paid|purchase[d]?|transacted|used)\s+(?:at|on)\s+([A-Za-z][A-Za-z0-9\s&.'-]{1,40}?)(?:\s+on|\s+for|\s+via|\s+ref|\s*\.|,|$)/i);
+  const atMatch = text.match(/(?:spent|paid|purchase[d]?|transacted|used|debited)\s+(?:at|on|for)\s+([A-Za-z][A-Za-z0-9\s&.'-]{1,50}?)(?:\s+on\s+\d|\s+for\s+Rs|\s+via\s|\s+ref\s|,|\s+Amount|$)/i);
   if (atMatch) {
-    const cleaned = cleanMerchantName(atMatch[1]);
-    if (cleaned && !isGarbageMerchant(cleaned)) return cleaned;
+    const r = tryClean(atMatch[1]);
+    if (r) return r;
   }
 
-  // "to <merchant>" or "from <merchant>" (transfer alerts)
-  const toFromMatch = text.match(/(?:transferred|sent|paid)\s+(?:to|from)\s+([A-Za-z][A-Za-z0-9\s&.'-]{1,40}?)(?:\s+on|\s+for|\s+via|\s+ref|\s*\.|,|$)/i);
+  // "to <merchant>" or "from <merchant>" (transfer alerts — broader verb coverage)
+  const toFromMatch = text.match(/(?:transferred|sent|paid|debited|received|credited)\s+(?:to|from|by)\s+([A-Za-z][A-Za-z0-9\s&.'-]{1,50}?)(?:\s+on\s+\d|\s+for\s+Rs|\s+via\s|\s+ref\s|\s+was\s|,|\s+Amount|\s+Avl|$)/i);
   if (toFromMatch) {
-    const cleaned = cleanMerchantName(toFromMatch[1]);
-    if (cleaned && !isGarbageMerchant(cleaned)) return cleaned;
+    const r = tryClean(toFromMatch[1]);
+    if (r) return r;
+  }
+
+  // "VPA <upi-id>" — extract merchant name from UPI VPA
+  const vpaMatch = text.match(/VPA\s+([a-zA-Z0-9._-]+)@/i);
+  if (vpaMatch) {
+    // VPA like "swiggy@ybl" → "Swiggy", "amazonpay@apl" → "Amazonpay"
+    const r = tryClean(vpaMatch[1].replace(/[._-]/g, ' '));
+    if (r) return r;
+  }
+
+  // "Merchant: <name>" or "Payee: <name>" (some banks use explicit labels)
+  const labelMatch = text.match(/(?:Merchant|Payee|Beneficiary|To)\s*[:\-]\s*([A-Za-z][A-Za-z0-9\s&.'-]{1,50}?)(?:\s+on\s+\d|\s+Ref|,|\s+A\/c|\s+Account|$)/i);
+  if (labelMatch) {
+    const r = tryClean(labelMatch[1]);
+    if (r) return r;
   }
 
   // Info field: Info: <description>
@@ -206,11 +249,18 @@ function extractMerchant(text) {
     const info = infoMatch[1];
     const parts = info.split('/').filter(Boolean);
     if (parts.length > 2) {
-      const cleaned = cleanMerchantName(parts[parts.length - 1].replace(/@.*/, ''));
-      if (cleaned && !isGarbageMerchant(cleaned)) return cleaned;
+      const r = tryClean(parts[parts.length - 1].replace(/@.*/, ''));
+      if (r) return r;
     }
-    const cleaned = cleanMerchantName(info);
-    if (cleaned && !isGarbageMerchant(cleaned)) return cleaned;
+    const r = tryClean(info);
+    if (r) return r;
+  }
+
+  // "debited for <merchant>" or "credited for <merchant>"
+  const debitForMatch = text.match(/(?:debited|credited)\s+(?:for|towards)\s+([A-Za-z][A-Za-z0-9\s&.'-]{1,50}?)(?:\s+on\s+\d|\s+for\s+Rs|\s+via\s|\s+ref\s|,|\s+Amount|$)/i);
+  if (debitForMatch) {
+    const r = tryClean(debitForMatch[1]);
+    if (r) return r;
   }
 
   return null;
@@ -276,8 +326,6 @@ function cleanMerchantName(name) {
     .replace(/[@\d]+$/, '')
     .replace(/\s+/g, ' ')
     .replace(/[*#]+/g, '')
-    // Strip trailing "in" from "Amazonin", "Swiggyin" etc.
-    .replace(/in$/i, '')
     .trim();
 
   // Strip common prefixes that leak from subject lines
@@ -286,7 +334,24 @@ function cleanMerchantName(name) {
     .replace(/^your\s+account\s+/i, '')
     .trim();
 
-  if (!cleaned) return null;
+  // Strip company suffixes (and their truncated forms)
+  // Handles: "Pvt Ltd", "Private Limited", "Pte Ltd", "Inc", "LLP", "India", etc.
+  cleaned = cleaned
+    .replace(/\s*\.?\s*(?:Pvt|Private|Pte|Ltd|Limited|LLP|Inc|Corp|Co)\b\.?/gi, ' ')
+    .replace(/\s*\.?\s*(?:India|Singapore|Payments?|Services?|Solutions?|Enterprises?|Technologies|Tech)\s*$/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Strip trailing "in" from "Amazonin", "Swiggyin" — but only when it looks like a
+  // squished domain suffix (lowercase "in" right after a word with no space)
+  cleaned = cleaned.replace(/([a-z])in$/i, '$1');
+
+  // Strip trailing truncation artifacts: ". The", ". Si", single trailing words < 4 chars after a period
+  cleaned = cleaned.replace(/\.\s+\w{1,4}$/, '').trim();
+  // Strip trailing periods and whitespace
+  cleaned = cleaned.replace(/[.\s]+$/, '').trim();
+
+  if (!cleaned || cleaned.length <= 1) return null;
 
   return cleaned
     .split(' ')
