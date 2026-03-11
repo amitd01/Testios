@@ -7,7 +7,7 @@ const { parseExcelStatement } = require('../parsers/excelParser');
 const { categorizeTransaction, categorizeByType } = require('./categorizationEngine');
 const { deduplicateTransactions } = require('./deduplicationEngine');
 const { parseWithLLM, clearCache: clearLLMCache, mapFinancialTypeToTransactionType } = require('./llmParser');
-const { crossValidate } = require('../utils/regexValidator');
+const { crossValidate, extractTextFromHtml, extractMerchantFromText } = require('../utils/regexValidator');
 const { recordSuccess, recordFailure } = require('./templateRegistry');
 const DocumentPassword = require('../models/DocumentPassword');
 const { createLogger } = require('../utils/logger');
@@ -364,7 +364,8 @@ class EmailProcessingEngine {
   }
 
   async processTransactionAlert(rawEmail, senderInfo) {
-    const body = rawEmail.body_html || rawEmail.body_text;
+    const bodyHtml = rawEmail.body_html || rawEmail.body_text;
+    const bodyText = extractTextFromHtml(bodyHtml);
     let llmUsed = false;
     let llmTokens = 0;
     let parserUsed = 'llm';
@@ -375,7 +376,8 @@ class EmailProcessingEngine {
     // ============================================================
     let llmData = null;
     try {
-      const llmResult = await parseWithLLM(body, 'transaction_alert_v2', {
+      // Send clean text to LLM (not raw HTML) for better extraction
+      const llmResult = await parseWithLLM(bodyText, 'transaction_alert_v2', {
         sender: rawEmail.sender,
         subject: rawEmail.subject,
       }, this.syncRunId);
@@ -393,7 +395,7 @@ class EmailProcessingEngine {
 
     // If LLM failed completely, fall back to regex parser
     if (!llmData) {
-      const regexResult = parseTransactionAlert(body, rawEmail.sender, rawEmail.subject, senderInfo);
+      const regexResult = parseTransactionAlert(bodyHtml, rawEmail.sender, rawEmail.subject, senderInfo);
       if (regexResult.data) {
         parserUsed = 'htmlAlertParser_fallback';
         confidence = regexResult.meta.confidence;
@@ -419,7 +421,7 @@ class EmailProcessingEngine {
     // ============================================================
     // REGEX CROSS-VALIDATION: Validate LLM numbers against regex
     // ============================================================
-    const { corrected, warnings } = crossValidate(llmData, body);
+    const { corrected, warnings } = crossValidate(llmData, bodyHtml);
     const parsed = corrected;
 
     if (warnings.length > 0) {
@@ -449,21 +451,22 @@ class EmailProcessingEngine {
     }
 
     // ============================================================
-    // MERCHANT CLEANUP
+    // MERCHANT CLEANUP & FALLBACK EXTRACTION
     // ============================================================
+    // Fallback 1: Try regex extraction from email body text
+    if (!parsed.merchant || parsed.merchant === 'Unknown') {
+      const regexMerchant = extractMerchantFromText(bodyText);
+      if (regexMerchant) parsed.merchant = regexMerchant;
+    }
+
+    // Fallback 2: Try extracting from email subject
     if (!parsed.merchant || parsed.merchant === 'Unknown') {
       const subjectMerchant = extractMerchantFromSubject(rawEmail.subject);
       if (subjectMerchant) parsed.merchant = subjectMerchant;
     }
 
-    if (parsed.merchant && /\b(credit card|debit card|ending\s+\d{4})\b/i.test(parsed.merchant)) {
-      const towards = parsed.merchant.match(/towards\s+(.+)/i);
-      if (towards) {
-        parsed.merchant = towards[1].trim().replace(/in$/i, '').trim();
-      } else {
-        parsed.merchant = 'Unknown';
-      }
-    }
+    // Note: credit card/debit card preamble stripping is already done in llmResponseValidator
+    // No need to duplicate it here
 
     // Title-case
     if (parsed.merchant && parsed.merchant !== 'Unknown') {
@@ -705,7 +708,8 @@ class EmailProcessingEngine {
   }
 
   async processBillReminder(rawEmail, senderInfo) {
-    const body = rawEmail.body_html || rawEmail.body_text;
+    const bodyHtml = rawEmail.body_html || rawEmail.body_text;
+    const bodyText = extractTextFromHtml(bodyHtml);
     let llmUsed = false;
     let llmTokens = 0;
     let parserUsed = 'llm';
@@ -714,7 +718,7 @@ class EmailProcessingEngine {
     // LLM-first with hierarchical v2 prompt
     let billData = null;
     try {
-      const llmResult = await parseWithLLM(body, 'bill_reminder_v2', {
+      const llmResult = await parseWithLLM(bodyText, 'bill_reminder_v2', {
         sender: rawEmail.sender,
         subject: rawEmail.subject,
       }, this.syncRunId);
@@ -732,7 +736,7 @@ class EmailProcessingEngine {
 
     // Fallback to regex parser
     if (!billData) {
-      const regexResult = parseBillReminder(body, rawEmail.sender, rawEmail.subject, senderInfo);
+      const regexResult = parseBillReminder(bodyHtml, rawEmail.sender, rawEmail.subject, senderInfo);
       if (regexResult.data) {
         billData = regexResult.data;
         parserUsed = 'billReminderParser_fallback';

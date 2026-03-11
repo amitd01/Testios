@@ -9,6 +9,7 @@ const CATEGORY_RULES = {
     'cafe', 'restaurant', 'pizza', 'burger', 'biryani', 'food', 'kitchen',
     'haldiram', 'barbeque', 'subway', 'kfc', 'chai', 'bakery', 'hotel',
     'eat', 'dine', 'meal', 'lunch', 'dinner', 'breakfast',
+    'taco bell', 'wendy', 'dunkin', 'baskin', 'panda express',
   ],
   'Transportation': [
     'uber', 'ola', 'rapido', 'petrol', 'diesel', 'hp pump', 'indian oil',

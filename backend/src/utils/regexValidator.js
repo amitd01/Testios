@@ -63,6 +63,66 @@ function extractPaymentMethod(text) {
 }
 
 /**
+ * Extract merchant name from plain text of Indian bank alert emails.
+ * Uses common patterns found in Indian bank/card/UPI alerts.
+ */
+function extractMerchantFromText(text) {
+  if (!text) return null;
+
+  const patterns = [
+    // UPI VPA: "to VPA swiggy@ybl" or "VPA: merchant@upi"
+    /(?:to\s+)?VPA[\s:]+([a-zA-Z0-9._-]+)@/i,
+    // "at <MERCHANT> on <date>" pattern (POS/Card transactions) — POS prefix stripped later
+    /\bat\s+(?:POS\s+)?([A-Za-z][A-Za-z0-9\s&.'/-]*?)\s+(?:on\s+\d|for\s+(?:Rs|INR|₹)|Avl\s|Avail|Available|Info)/i,
+    // "paid to <MERCHANT>" pattern
+    /(?:paid|amount\s*(?:Rs\.?|INR)?\s*[\d,.]+\s*paid)\s+to\s+([A-Za-z][A-Za-z0-9\s&.'/-]*?)\s+(?:on\s+\d|for\s+|via\s+|using\s+)/i,
+    // "transferred/sent to <MERCHANT>" pattern
+    /(?:transferred|sent)\s+to\s+([A-Za-z][A-Za-z0-9\s&.'/-]*?)\s+(?:on\s+\d|for\s+|via\s+)/i,
+    // "towards <MERCHANT>" pattern
+    /towards\s+([A-Za-z][A-Za-z0-9\s&.'/-]*?)\s+(?:on\s+\d|for\s+(?:Rs|INR|₹)|was\s|Amount)/i,
+    // "from <MERCHANT>" for credits (salary, refunds, etc.)
+    /(?:received|credited|credit)\s+(?:from|by)\s+([A-Za-z][A-Za-z0-9\s&.'/-]*?)(?:\s+on\s+\d|\s+for\s+|\s+salary|\.\s)/i,
+    // "Info: UPI/<type>/<ref>/<merchant>@upi" pattern
+    /Info:\s*UPI\/[^/]+\/[^/]+\/([a-zA-Z][a-zA-Z0-9._-]*?)(?:@|\s)/i,
+    // "debited for <MERCHANT>" or "purchase at <MERCHANT>"
+    /(?:debited\s+for|purchase\s+at)\s+([A-Za-z][A-Za-z0-9\s&.'/-]*?)\s+(?:on\s+\d)/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match) {
+      let merchant = match[1].trim();
+
+      // For UPI VPA, clean up: "swiggy" → "Swiggy"
+      if (pattern.source.includes('VPA')) {
+        merchant = merchant.split(/[._-]/)[0]; // take first part before dots/dashes
+      }
+
+      // Strip POS prefix
+      merchant = merchant.replace(/^POS\s+/i, '');
+
+      // Strip common suffixes
+      merchant = merchant
+        .replace(/\s+(?:Pvt|Private)\s*\.?\s*(?:Ltd|Limited)\.?/gi, '')
+        .replace(/\s+(?:Pte)\s*\.?\s*(?:Ltd)\.?/gi, '')
+        .replace(/\s+(?:LLP|Inc)\b\.?/gi, '')
+        .replace(/\s+(?:India|Payments?|Services?|Solutions?|Technologies|Enterprises?)\s*$/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      // Reject if too short or looks like account info
+      if (merchant.length < 2) continue;
+      if (/^\d+$/.test(merchant)) continue;
+      if (/^(credit card|debit card|account|a\/c|pos)$/i.test(merchant)) continue;
+
+      return merchant;
+    }
+  }
+
+  return null;
+}
+
+/**
  * Cross-validate LLM output against regex-extracted values.
  * Returns { corrected, warnings } where corrected is the LLM data with regex overrides.
  */
@@ -115,6 +175,15 @@ function crossValidate(llmData, emailText) {
     }
   }
 
+  // Fill merchant if LLM returned null/Unknown
+  if (!llmData.merchant || llmData.merchant === 'Unknown') {
+    const regexMerchant = extractMerchantFromText(text);
+    if (regexMerchant) {
+      corrected.merchant = regexMerchant;
+      warnings.push('merchant_filled_by_regex');
+    }
+  }
+
   return { corrected, warnings };
 }
 
@@ -124,5 +193,6 @@ module.exports = {
   extractAccountLast4,
   extractBalance,
   extractPaymentMethod,
+  extractMerchantFromText,
   crossValidate,
 };
