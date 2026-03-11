@@ -9,6 +9,7 @@ const { deduplicateTransactions } = require('./deduplicationEngine');
 const { parseWithLLM } = require('./llmParser');
 const { recordSuccess, recordFailure } = require('./templateRegistry');
 const { createLogger } = require('../utils/logger');
+const db = require('../config/database');
 const SyncRun = require('../models/SyncRun');
 const RawEmail = require('../models/RawEmail');
 const Transaction = require('../models/Transaction');
@@ -626,6 +627,108 @@ class EmailProcessingEngine {
   async processInvestmentStatement(rawEmail, gmail, fullMessage) {
     this.logger.info('Investment statement stored for manual review', { email_id: rawEmail.id });
     return { parserUsed: 'none', llmUsed: false, llmTokens: 0, confidence: 0, txnCount: 0 };
+  }
+
+  /**
+   * Re-parse all stored emails with updated parsing logic.
+   * Clears existing parsed data, resets raw_emails to pending, re-processes each.
+   * Does NOT re-fetch from Gmail — uses stored email content.
+   */
+  async runReparse() {
+    const syncRun = await SyncRun.create(this.userId, 'reparse', { reason: 'manual_reparse' });
+    this.syncRunId = syncRun.id;
+    this.logger = this.logger.withSyncRunId(syncRun.id);
+    this.logger.info('Starting re-parse of all stored emails');
+
+    try {
+      // 1. Clear existing parsed data (transactions, raw_transactions, bills) for this user
+      await db.query('DELETE FROM transactions WHERE user_id = $1', [this.userId]);
+      await db.query('DELETE FROM raw_transactions WHERE user_id = $1', [this.userId]);
+      await db.query('DELETE FROM bills WHERE user_id = $1', [this.userId]);
+      this.logger.info('Cleared existing parsed data');
+
+      // 2. Reset all raw_emails to pending
+      await db.query(
+        `UPDATE raw_emails SET parsing_status = 'pending', processed_at = NULL,
+         parsing_errors = NULL, processing_time_ms = NULL, parser_used = NULL,
+         llm_used = NULL, llm_tokens_used = NULL, confidence_score = NULL,
+         error_type = NULL, transactions_extracted = NULL, processing_details = NULL
+         WHERE user_id = $1`,
+        [this.userId]
+      );
+
+      // 3. Get all stored emails
+      const result = await db.query(
+        'SELECT * FROM raw_emails WHERE user_id = $1 ORDER BY received_at ASC',
+        [this.userId]
+      );
+      const emails = result.rows;
+      this.logger.info(`Re-parsing ${emails.length} stored emails`);
+      await SyncRun.incrementCounters(this.syncRunId, { emails_found: emails.length });
+
+      // 4. Re-process each email (only types that don't need attachments)
+      for (let i = 0; i < emails.length; i++) {
+        const rawEmail = emails[i];
+        try {
+          const senderInfo = await getSenderInfo(rawEmail.sender);
+
+          // Re-classify in case classification logic also improved
+          const parsed = {
+            subject: rawEmail.subject,
+            sender: rawEmail.sender,
+            attachments: typeof rawEmail.attachments === 'string'
+              ? JSON.parse(rawEmail.attachments) : rawEmail.attachments,
+          };
+          const category = this.classifyEmail(parsed, senderInfo);
+
+          // Update category if changed
+          if (category !== rawEmail.email_category) {
+            await db.query('UPDATE raw_emails SET email_category = $1 WHERE id = $2', [category, rawEmail.id]);
+            rawEmail.email_category = category;
+          }
+
+          // Only re-parse types that have stored body content
+          if (rawEmail.email_category === 'transaction_alert' || rawEmail.email_category === 'bill_reminder') {
+            await this.processEmail(rawEmail, null, null, senderInfo);
+          } else {
+            // PDF/Excel need re-download — skip and mark as needing re-sync
+            await RawEmail.markProcessed(rawEmail.id, { status: 'pending', errors: 'needs_attachment_redownload' });
+            this.stats.skipped++;
+          }
+        } catch (err) {
+          this.logger.error(`Re-parse failed for email ${rawEmail.id}`, { error: err.message });
+          await RawEmail.markProcessed(rawEmail.id, { status: 'failed', errors: err.message });
+          this.recordError(this.classifyError(err));
+          this.stats.failed++;
+        }
+
+        if ((i + 1) % 10 === 0) {
+          await this.flushCounters();
+        }
+      }
+
+      // 5. Run deduplication
+      this.logger.info('Running deduplication...');
+      const dedupResult = await deduplicateTransactions(this.userId);
+      this.logger.info('Deduplication complete', dedupResult.stats);
+
+      // 6. Finalize
+      await this.flushCounters();
+      await SyncRun.incrementCounters(this.syncRunId, {
+        transactions_deduplicated: dedupResult.stats.output,
+        llm_calls: this.llmCalls,
+        llm_tokens_total: this.llmTokensTotal,
+        parse_time_ms: this.parseTime,
+      });
+      await SyncRun.complete(this.syncRunId, 'completed', this.errorCounts);
+
+      this.logger.info('Re-parse complete', { stats: this.stats, dedup: dedupResult.stats });
+      return this.stats;
+    } catch (err) {
+      this.logger.error('Re-parse failed', { error: err.message });
+      await SyncRun.complete(this.syncRunId, 'failed', { fatal: err.message, ...this.errorCounts });
+      throw err;
+    }
   }
 
   // --- Helpers ---

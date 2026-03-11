@@ -38,6 +38,21 @@ const syncController = {
   },
 
   /**
+   * POST /api/sync/reparse - Re-parse all stored emails with updated parsing logic
+   * Does not re-fetch from Gmail. Clears existing transactions and re-processes stored emails.
+   */
+  async reparse(req, res) {
+    try {
+      const engine = new EmailProcessingEngine(req.userId);
+      const stats = await engine.runReparse();
+      res.json({ message: 'Re-parse completed', stats });
+    } catch (err) {
+      console.error('Re-parse error:', err);
+      res.status(500).json({ error: 'Re-parse failed: ' + err.message });
+    }
+  },
+
+  /**
    * GET /api/sync/status - Get sync status
    */
   async getStatus(req, res) {

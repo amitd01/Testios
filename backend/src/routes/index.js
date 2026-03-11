@@ -61,6 +61,7 @@ router.delete('/api/budgets/:id', budgetController.delete);
 // Email Sync
 router.post('/api/sync/start', syncController.startSync);
 router.post('/api/sync/onboarding', syncController.onboardingScan);
+router.post('/api/sync/reparse', syncController.reparse);
 router.get('/api/sync/status', syncController.getStatus);
 
 // Insights

@@ -5,6 +5,8 @@ import { Card } from '../components/Card';
 export default function Settings({ user, onSync }) {
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState(null);
+  const [reparsing, setReparsing] = useState(false);
+  const [reparseResult, setReparseResult] = useState(null);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -17,6 +19,23 @@ export default function Settings({ user, onSync }) {
       setSyncResult({ error: err.message });
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const handleReparse = async () => {
+    if (!window.confirm('This will clear all existing transactions and re-parse every stored email with the latest parsing logic. Continue?')) {
+      return;
+    }
+    setReparsing(true);
+    setReparseResult(null);
+    try {
+      const result = await api.post('/api/sync/reparse');
+      setReparseResult(result);
+      if (onSync) onSync();
+    } catch (err) {
+      setReparseResult({ error: err.message });
+    } finally {
+      setReparsing(false);
     }
   };
 
@@ -76,6 +95,21 @@ export default function Settings({ user, onSync }) {
             <option value="daily">Daily</option>
             <option value="manual">Manual only</option>
           </select>
+        </div>
+        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16, marginTop: 8 }}>
+          <div style={{ fontWeight: 500, marginBottom: 4 }}>Re-parse Emails</div>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>
+            Clear all transactions and re-process stored emails with the latest parsing logic.
+            Does not re-fetch from Gmail.
+          </div>
+          <button className="btn btn-secondary" onClick={handleReparse} disabled={reparsing}>
+            {reparsing ? 'Re-parsing...' : 'Re-parse All Emails'}
+          </button>
+          {reparseResult && (
+            <div style={{ marginTop: 12, fontSize: 13, color: reparseResult.error ? 'var(--accent-red)' : 'var(--accent-green)' }}>
+              {reparseResult.error || `Re-parse complete: ${reparseResult.stats?.parsed || 0} parsed, ${reparseResult.stats?.failed || 0} failed`}
+            </div>
+          )}
         </div>
       </Card>
 
