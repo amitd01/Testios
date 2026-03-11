@@ -9,6 +9,13 @@ const syncController = {
     try {
       const user = await User.findById(req.userId);
       const engine = new EmailProcessingEngine(req.userId);
+      const { reparse: forceReparse } = req.body || {};
+
+      if (forceReparse) {
+        const stats = await engine.runReparse();
+        res.json({ message: 'Re-parse completed', stats, reparsed: true });
+        return;
+      }
 
       // Incremental sync: only fetch emails since last sync
       const stats = await engine.runFullSync({
@@ -29,6 +36,22 @@ const syncController = {
       const { days = 30 } = req.body;
       const engine = new EmailProcessingEngine(req.userId);
       const stats = await engine.runOnboardingScan(days);
+
+      // If all emails were skipped (already stored from prior session),
+      // auto-trigger re-parse so the user still gets transactions
+      if (stats.skipped > 0 && stats.parsed === 0 && stats.fetched === 0) {
+        console.log(`Onboarding: ${stats.skipped} emails already stored, triggering re-parse`);
+        const reparseEngine = new EmailProcessingEngine(req.userId);
+        const reparseStats = await reparseEngine.runReparse();
+        await User.setOnboarded(req.userId);
+        res.json({
+          message: 'Re-parse completed (emails already stored)',
+          stats: reparseStats,
+          reparsed: true,
+        });
+        return;
+      }
+
       await User.setOnboarded(req.userId);
       res.json({ message: 'Onboarding scan completed', stats });
     } catch (err) {
