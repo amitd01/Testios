@@ -26,6 +26,8 @@ check_cmd() {
   echo -e "${GREEN}✓${NC} $1 found"
 }
 
+PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
+
 echo "Checking prerequisites..."
 check_cmd node "Install from https://nodejs.org (v18+)"
 check_cmd npm "Comes with Node.js"
@@ -116,15 +118,15 @@ echo ""
 
 # ---- Install dependencies ----
 echo "Installing dependencies..."
-cd backend && npm install --silent && cd ..
+(cd "$PROJECT_ROOT/backend" && npm install --silent)
 echo -e "${GREEN}✓${NC} Backend dependencies installed"
-cd frontend && npm install --silent && cd ..
+(cd "$PROJECT_ROOT/frontend" && npm install --silent)
 echo -e "${GREEN}✓${NC} Frontend dependencies installed"
 echo ""
 
 # ---- Run migrations ----
 echo "Running database migrations..."
-cd backend && node src/migrations/run.js up && cd ..
+(cd "$PROJECT_ROOT/backend" && node src/migrations/run.js up)
 echo ""
 
 # ---- Start services ----
@@ -142,9 +144,8 @@ echo -e "${GREEN}✓${NC} Redis running"
 
 # Start backend
 echo "Starting backend on port 3001..."
-cd backend && node src/index.js &
+(cd "$PROJECT_ROOT/backend" && node src/index.js) &
 BACKEND_PID=$!
-cd ..
 
 # Wait for backend
 for i in $(seq 1 10); do
@@ -157,9 +158,8 @@ echo -e "${GREEN}✓${NC} Backend running at http://localhost:3001"
 
 # Start frontend
 echo "Starting frontend on port 3000..."
-cd frontend && PORT=3000 npm run dev &
+(cd "$PROJECT_ROOT/frontend" && PORT=3000 npm run dev) &
 FRONTEND_PID=$!
-cd ..
 
 echo ""
 echo "==========================================="
