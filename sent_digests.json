@@ -24,5 +24,23 @@
       "https://mtrajan.substack.com/p/sarvam-open-is-not-sovereign",
       "https://t.co/xT9mnpHSxG"
     ]
+  },
+  "2026-03-11": {
+    "message_ids": [
+      "19cda8e4b0b6de21",
+      "19cd924ccf939273",
+      "19cd8c7b70c8c642",
+      "19cd82dc99c333d3",
+      "19cd8130caede924",
+      "19cd7b53e17a2723",
+      "19cd76bab1d0c1ce"
+    ],
+    "article_urls": [
+      "https://thedailybrief.zerodha.com/p/pentagon-anthropic-and-the-promise",
+      "https://www.a16z.news/p/your-data-agents-need-context",
+      "https://aimaker.substack.com/p/vibe-coding-mistakes",
+      "https://pm2dev.substack.com/p/pm-to-rust-dev-episode-0002-what",
+      "https://paulgraham.com/brandage.html"
+    ]
   }
 }
