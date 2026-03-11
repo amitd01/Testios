@@ -14,7 +14,7 @@ export default function Onboarding() {
     setError(null);
     try {
       const result = await api.post('/api/sync/onboarding', { days: 30 });
-      setScanResult(result.stats);
+      setScanResult({ ...result.stats, reparsed: result.reparsed || false });
       setStep(3);
     } catch (err) {
       setError(err.message);
@@ -41,7 +41,7 @@ export default function Onboarding() {
           <>
             <h2 style={styles.heading}>Gmail Connected!</h2>
             <p style={styles.desc}>
-              We'll now scan your inbox for the last 30 days to find financial emails from banks, credit cards, billers, and investment platforms.
+              We'll now scan your inbox to find financial emails from banks, credit cards, billers, and investment platforms.
             </p>
             <div style={styles.infoBox}>
               <p><strong>What we look for:</strong></p>
@@ -87,18 +87,23 @@ export default function Onboarding() {
             <h2 style={styles.heading}>Scan Complete!</h2>
             <div style={styles.statsGrid}>
               <div style={styles.stat}>
-                <div style={styles.statValue}>{scanResult?.fetched || 0}</div>
+                <div style={styles.statValue}>{scanResult?.fetched || scanResult?.parsed || 0}</div>
                 <div style={styles.statLabel}>Emails Processed</div>
               </div>
               <div style={styles.stat}>
-                <div style={styles.statValue}>{scanResult?.parsed || 0}</div>
+                <div style={styles.statValue}>{scanResult?.transactions || scanResult?.parsed || 0}</div>
                 <div style={styles.statLabel}>Transactions Found</div>
               </div>
               <div style={styles.stat}>
-                <div style={styles.statValue}>{scanResult?.skipped || 0}</div>
-                <div style={styles.statLabel}>Skipped</div>
+                <div style={styles.statValue}>{scanResult?.failed || 0}</div>
+                <div style={styles.statLabel}>Failed</div>
               </div>
             </div>
+            {scanResult?.reparsed && (
+              <p style={{ color: 'var(--accent-blue)', fontSize: 13, marginBottom: 16 }}>
+                Emails were already stored from a previous session. Re-parsed with latest logic.
+              </p>
+            )}
             {scanResult?.failed > 0 && (
               <p style={{ color: 'var(--accent-amber)', fontSize: 13, marginBottom: 16 }}>
                 {scanResult.failed} emails could not be parsed. These will improve over time.
