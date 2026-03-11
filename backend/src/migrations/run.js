@@ -2,10 +2,12 @@ require('dotenv').config();
 const db = require('../config/database');
 const schema001 = require('./001_initial_schema');
 const schema002 = require('./002_observability');
+const schema003 = require('./003_instrument_types');
 
 const migrations = [
   { name: '001_initial_schema', ...schema001 },
   { name: '002_observability', ...schema002 },
+  { name: '003_instrument_types', ...schema003 },
 ];
 
 async function migrate(direction = 'up') {

@@ -192,11 +192,13 @@ function validateLLMResponse(parsed, contentType) {
       if (!parsed.merchant) parsed.merchant = null;
       warnings.push('merchant_name_had_numbers');
     }
-    // Strip company suffixes
+    // Strip company suffixes — but only full legal entity suffixes, not single words
+    // that might be part of the actual merchant name (e.g., "Corp" alone is fine)
     if (parsed.merchant) {
       parsed.merchant = parsed.merchant
-        .replace(/\s*\.?\s*(?:Pvt|Private|Pte|Ltd|Limited|LLP|Inc|Corp|Co)\b\.?/gi, ' ')
-        .replace(/\s*\.?\s*(?:India|Singapore|Payments?|Services?|Solutions?|Enterprises?|Technologies|Tech)\s*$/i, '')
+        .replace(/\s+(?:Pvt|Private)\s*\.?\s*(?:Ltd|Limited)\.?/gi, '')
+        .replace(/\s+(?:Pte)\s*\.?\s*(?:Ltd)\.?/gi, '')
+        .replace(/\s+(?:LLP|Inc)\b\.?/gi, '')
         .replace(/\s+/g, ' ')
         .trim();
       parsed.merchant = parsed.merchant.replace(/\.\s+\w{1,4}$/, '').replace(/[.\s]+$/, '').trim();
