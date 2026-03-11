@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { clearToken } from '../utils/api';
 import './Layout.css';
 
 const navItems = [
@@ -41,6 +42,16 @@ export default function Layout({ children, user }) {
         <div className="sidebar-user">
           <div className="user-avatar">{user?.name?.[0] || '?'}</div>
           <span className="user-email">{user?.email || ''}</span>
+          <button
+            className="logout-btn"
+            title="Log out"
+            onClick={() => {
+              clearToken();
+              window.location.href = '/';
+            }}
+          >
+            ↪
+          </button>
         </div>
       </nav>
       <main className="main-content">
