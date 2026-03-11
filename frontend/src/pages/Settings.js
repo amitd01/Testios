@@ -45,11 +45,15 @@ export default function Settings({ user, onSync }) {
     }
     try {
       await api.post('/api/revoke');
-      clearToken();
-      window.location.href = '/';
     } catch (err) {
-      alert('Failed to revoke access: ' + err.message);
+      // 401 means token/user already gone — that's fine, just log out
+      if (!err.message.includes('Unauthorized') && !err.message.includes('401')) {
+        alert('Failed to revoke access: ' + err.message);
+        return;
+      }
     }
+    clearToken();
+    window.location.href = '/';
   };
 
   return (

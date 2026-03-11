@@ -74,6 +74,10 @@ const authController = {
    */
   async revokeAccess(req, res) {
     try {
+      const user = await User.findById(req.userId);
+      if (!user) {
+        return res.json({ message: 'Session cleared (user not found in database)' });
+      }
       await User.deleteAllData(req.userId);
       res.json({ message: 'All data deleted and Gmail access revoked' });
     } catch (err) {
