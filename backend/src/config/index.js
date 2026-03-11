@@ -16,6 +16,9 @@ module.exports = {
   },
   emailSync: {
     intervalSeconds: parseInt(process.env.EMAIL_SYNC_INTERVAL, 10) || 3600,
-    initialScanDays: parseInt(process.env.INITIAL_SCAN_DAYS, 10) || 90,
+    initialScanDays: parseInt(process.env.INITIAL_SCAN_DAYS, 10) || 30,
+  },
+  anthropic: {
+    apiKey: process.env.ANTHROPIC_API_KEY,
   },
 };

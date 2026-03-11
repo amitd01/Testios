@@ -5,8 +5,9 @@ const Transaction = require('../models/Transaction');
  * Matches transactions from multiple sources (alert emails + PDF statements)
  */
 async function deduplicateTransactions(userId) {
+  const startTime = Date.now();
   const rawTxns = await Transaction.getUnprocessedRaw(userId);
-  if (rawTxns.length === 0) return [];
+  if (rawTxns.length === 0) return { harmonized: [], stats: { input: 0, output: 0, merged: 0, duration_ms: Date.now() - startTime } };
 
   // Sort by trust (statement_pdf > email_alert)
   const sorted = [...rawTxns].sort((a, b) => {
@@ -17,6 +18,7 @@ async function deduplicateTransactions(userId) {
 
   const harmonized = [];
   const matched = new Set();
+  let mergedCount = 0;
 
   for (const txn of sorted) {
     if (matched.has(txn.id)) continue;
@@ -36,6 +38,8 @@ async function deduplicateTransactions(userId) {
       rawIds.push(dup.id);
       matched.add(dup.id);
     }
+
+    if (duplicates.length > 0) mergedCount += duplicates.length;
 
     // Merge data from multiple sources
     const merged = mergeTransactionData(txn, duplicates);
@@ -67,7 +71,11 @@ async function deduplicateTransactions(userId) {
     results.push(result);
   }
 
-  return results;
+  const duration_ms = Date.now() - startTime;
+  return {
+    harmonized: results,
+    stats: { input: rawTxns.length, output: harmonized.length, merged: mergedCount, duration_ms },
+  };
 }
 
 function isSameTransaction(a, b) {

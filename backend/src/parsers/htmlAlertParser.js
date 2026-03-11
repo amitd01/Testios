@@ -1,11 +1,16 @@
 const cheerio = require('cheerio');
 const { parseIndianDate, parseINRAmount } = require('../utils/indianFormats');
-const { getSenderInfo, getDomainFromEmail } = require('../services/senderWhitelist');
 
 /**
  * Parse HTML transaction alert emails from Indian banks
+ * Returns { data, meta } envelope for observability
  */
-function parseTransactionAlert(emailBody, sender, subject) {
+function parseTransactionAlert(emailBody, sender, subject, senderInfo = null) {
+  const startTime = Date.now();
+  const fieldsExtracted = [];
+  const fieldsMissing = [];
+  const warnings = [];
+
   const text = extractTextFromHtml(emailBody);
   const combined = (subject || '') + ' ' + text;
 
@@ -17,25 +22,44 @@ function parseTransactionAlert(emailBody, sender, subject) {
   const paymentMethod = extractPaymentMethod(combined);
   const balanceAfter = extractBalance(combined);
 
-  if (amount === null) return null;
+  if (amount !== null) fieldsExtracted.push('amount'); else fieldsMissing.push('amount');
+  if (date) fieldsExtracted.push('date'); else { fieldsMissing.push('date'); warnings.push('date_fallback_to_today'); }
+  if (accountLast4) fieldsExtracted.push('account_last4'); else fieldsMissing.push('account_last4');
+  if (merchant) fieldsExtracted.push('merchant'); else { fieldsMissing.push('merchant'); warnings.push('merchant_fallback_to_unknown'); }
+  if (balanceAfter !== null) fieldsExtracted.push('balance_after'); else fieldsMissing.push('balance_after');
+  if (paymentMethod !== 'Other') fieldsExtracted.push('payment_method');
 
-  const senderInfo = getSenderInfo(sender);
+  const duration_ms = Date.now() - startTime;
+
+  let confidence = 0;
+  if (amount !== null) confidence += 30;
+  if (date) confidence += 20;
+  if (merchant) confidence += 20;
+  if (accountLast4) confidence += 15;
+  if (balanceAfter !== null) confidence += 10;
+  confidence += 5; // transaction_type always present
+
+  if (amount === null) {
+    return {
+      data: null,
+      meta: { parser: 'htmlAlertParser', duration_ms, fields_extracted: fieldsExtracted, fields_missing: fieldsMissing, confidence: 0, warnings: ['no_amount_found'] },
+    };
+  }
 
   return {
-    amount: isDebit ? -Math.abs(amount) : Math.abs(amount),
-    date: date || new Date().toISOString().split('T')[0],
-    merchant: merchant || 'Unknown',
-    account_last4: accountLast4,
-    account_type: detectAccountType(combined, senderInfo),
-    transaction_type: isDebit ? 'debit' : 'credit',
-    payment_method: paymentMethod,
-    balance_after: balanceAfter,
-    source: 'email_alert',
-    metadata: {
-      sender,
-      sender_domain: getDomainFromEmail(sender),
-      institution: senderInfo?.name,
+    data: {
+      amount: isDebit ? -Math.abs(amount) : Math.abs(amount),
+      date: date || new Date().toISOString().split('T')[0],
+      merchant: merchant || 'Unknown',
+      account_last4: accountLast4,
+      account_type: detectAccountType(combined, senderInfo),
+      transaction_type: isDebit ? 'debit' : 'credit',
+      payment_method: paymentMethod,
+      balance_after: balanceAfter,
+      source: 'email_alert',
+      metadata: { sender, institution: senderInfo?.name },
     },
+    meta: { parser: 'htmlAlertParser', duration_ms, fields_extracted: fieldsExtracted, fields_missing: fieldsMissing, confidence, warnings },
   };
 }
 

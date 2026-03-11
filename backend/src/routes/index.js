@@ -10,6 +10,8 @@ const goalController = require('../controllers/goalController');
 const budgetController = require('../controllers/budgetController');
 const syncController = require('../controllers/syncController');
 const insightsController = require('../controllers/insightsController');
+const diagnosticsController = require('../controllers/diagnosticsController');
+const senderController = require('../controllers/senderController');
 
 const router = express.Router();
 
@@ -63,5 +65,24 @@ router.get('/api/sync/status', syncController.getStatus);
 
 // Insights
 router.get('/api/insights', insightsController.getInsights);
+
+// Diagnostics
+router.get('/api/diagnostics/sync-runs', diagnosticsController.listSyncRuns);
+router.get('/api/diagnostics/sync-runs/:id', diagnosticsController.getSyncRun);
+router.get('/api/diagnostics/sync-runs/:id/emails', diagnosticsController.getSyncRunEmails);
+router.get('/api/diagnostics/sync-runs/:id/errors', diagnosticsController.getSyncRunErrors);
+router.get('/api/diagnostics/email/:id', diagnosticsController.getEmailDetail);
+router.get('/api/diagnostics/stats', diagnosticsController.getStats);
+router.get('/api/diagnostics/senders', diagnosticsController.getSenderStats);
+router.get('/api/diagnostics/parser-performance', diagnosticsController.getParserPerformance);
+router.get('/api/diagnostics/llm-usage', diagnosticsController.getLLMUsage);
+
+// Admin - Sender Management
+router.get('/api/admin/senders', senderController.listSenders);
+router.post('/api/admin/senders', senderController.addSender);
+router.delete('/api/admin/senders/:domain', senderController.removeSender);
+router.get('/api/admin/senders/pending', senderController.listPending);
+router.post('/api/admin/senders/pending/:id/approve', senderController.approvePending);
+router.get('/api/admin/templates', senderController.listTemplates);
 
 module.exports = router;

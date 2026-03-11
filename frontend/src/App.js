@@ -15,6 +15,8 @@ import Investments from './pages/Investments';
 import CreditCards from './pages/CreditCards';
 import Insights from './pages/Insights';
 import Settings from './pages/Settings';
+import Diagnostics from './pages/Diagnostics';
+import SyncRunDetail from './pages/SyncRunDetail';
 
 function ProtectedRoute({ children, user }) {
   if (!isAuthenticated()) return <Navigate to="/" replace />;
@@ -47,6 +49,8 @@ export default function App() {
       <Route path="/cards" element={<ProtectedRoute user={user}><CreditCards /></ProtectedRoute>} />
       <Route path="/insights" element={<ProtectedRoute user={user}><Insights /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute user={user}><Settings user={user} onSync={refetch} /></ProtectedRoute>} />
+      <Route path="/diagnostics" element={<ProtectedRoute user={user}><Diagnostics /></ProtectedRoute>} />
+      <Route path="/diagnostics/run/:id" element={<ProtectedRoute user={user}><SyncRunDetail /></ProtectedRoute>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

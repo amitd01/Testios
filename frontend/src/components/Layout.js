@@ -11,6 +11,7 @@ const navItems = [
   { path: '/investments', icon: '📈', label: 'Investments' },
   { path: '/cards', icon: '💳', label: 'Cards' },
   { path: '/insights', icon: '💡', label: 'Insights' },
+  { path: '/diagnostics', icon: '🔍', label: 'Diagnostics' },
   { path: '/settings', icon: '⚙', label: 'Settings' },
 ];
 

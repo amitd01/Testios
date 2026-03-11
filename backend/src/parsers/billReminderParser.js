@@ -1,16 +1,20 @@
 const { parseIndianDate } = require('../utils/indianFormats');
-const { getSenderInfo, getDomainFromEmail } = require('../services/senderWhitelist');
 
 /**
  * Parse bill payment reminder emails
+ * Returns { data, meta } envelope for observability
  */
-function parseBillReminder(emailBody, sender, subject) {
+function parseBillReminder(emailBody, sender, subject, senderInfo = null) {
+  const startTime = Date.now();
+  const fieldsExtracted = [];
+  const fieldsMissing = [];
+  const warnings = [];
+
   const text = typeof emailBody === 'string'
     ? emailBody.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
     : '';
   const combined = (subject || '') + ' ' + text;
 
-  const senderInfo = getSenderInfo(sender);
   const billerName = senderInfo?.name || extractBillerName(combined);
   const billType = detectBillType(combined, senderInfo);
   const amount = extractBillAmount(combined);
@@ -18,20 +22,40 @@ function parseBillReminder(emailBody, sender, subject) {
   const accountNumber = extractAccountNumber(combined, billType);
   const recurrence = detectRecurrence(combined, billType);
 
-  if (!billerName && !amount && !dueDate) return null;
+  if (billerName) fieldsExtracted.push('biller_name'); else fieldsMissing.push('biller_name');
+  if (amount !== null) fieldsExtracted.push('amount'); else fieldsMissing.push('amount');
+  if (dueDate) fieldsExtracted.push('due_date'); else fieldsMissing.push('due_date');
+  if (accountNumber) fieldsExtracted.push('account_number'); else fieldsMissing.push('account_number');
+  if (billType !== 'other') fieldsExtracted.push('bill_type');
+
+  let confidence = 0;
+  if (billerName) confidence += 25;
+  if (amount !== null) confidence += 30;
+  if (dueDate) confidence += 25;
+  if (accountNumber) confidence += 10;
+  if (billType !== 'other') confidence += 10;
+
+  const duration_ms = Date.now() - startTime;
+
+  if (!billerName && !amount && !dueDate) {
+    return {
+      data: null,
+      meta: { parser: 'billReminderParser', duration_ms, fields_extracted: fieldsExtracted, fields_missing: fieldsMissing, confidence: 0, warnings: ['no_bill_data_found'] },
+    };
+  }
 
   return {
-    biller_name: billerName || 'Unknown Biller',
-    bill_type: billType,
-    amount,
-    due_date: dueDate,
-    account_number: accountNumber,
-    recurrence,
-    source: 'bill_reminder',
-    metadata: {
-      sender,
-      sender_domain: getDomainFromEmail(sender),
+    data: {
+      biller_name: billerName || 'Unknown Biller',
+      bill_type: billType,
+      amount,
+      due_date: dueDate,
+      account_number: accountNumber,
+      recurrence,
+      source: 'bill_reminder',
+      metadata: { sender },
     },
+    meta: { parser: 'billReminderParser', duration_ms, fields_extracted: fieldsExtracted, fields_missing: fieldsMissing, confidence, warnings },
   };
 }
 

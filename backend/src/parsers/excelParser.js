@@ -2,17 +2,25 @@ const { parseIndianDate } = require('../utils/indianFormats');
 
 /**
  * Parse Excel bank statements using xlsx library
+ * Returns { data, meta } envelope for observability
  */
 async function parseExcelStatement(buffer) {
+  const startTime = Date.now();
+  const warnings = [];
+
   const XLSX = require('xlsx');
   const workbook = XLSX.read(buffer, { type: 'buffer' });
   const sheetName = workbook.SheetNames[0];
   const sheet = workbook.Sheets[sheetName];
   const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
 
-  // Find header row
   const headerIdx = findHeaderRow(rows);
-  if (headerIdx === -1) return { transactions: [], accountLast4: null };
+  if (headerIdx === -1) {
+    return {
+      data: { transactions: [], accountLast4: null },
+      meta: { parser: 'excelParser', duration_ms: Date.now() - startTime, confidence: 0, warnings: ['no_header_row_found'], fields_extracted: [], fields_missing: ['transactions'], transactions_count: 0 },
+    };
+  }
 
   const headers = normalizeHeaders(rows[headerIdx]);
   const transactions = [];
@@ -20,12 +28,21 @@ async function parseExcelStatement(buffer) {
   for (let i = headerIdx + 1; i < rows.length; i++) {
     const row = rows[i];
     if (!row || row.every(cell => !cell)) continue;
-
     const txn = mapRowToTransaction(row, headers);
     if (txn) transactions.push(txn);
   }
 
-  return { transactions, accountLast4: null };
+  let confidence = 0;
+  if (transactions.length > 0) confidence += 60;
+  if (headerIdx >= 0) confidence += 20;
+  confidence += Math.min(20, transactions.length); // more txns = more confident
+
+  const duration_ms = Date.now() - startTime;
+
+  return {
+    data: { transactions, accountLast4: null },
+    meta: { parser: 'excelParser', duration_ms, confidence, warnings, fields_extracted: transactions.length > 0 ? ['transactions'] : [], fields_missing: transactions.length === 0 ? ['transactions'] : [], transactions_count: transactions.length, total_rows: rows.length, header_row: headerIdx },
+  };
 }
 
 function findHeaderRow(rows) {

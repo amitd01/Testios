@@ -1,104 +1,128 @@
 const GmailService = require('./gmailService');
-const { isWhitelistedSender, getSenderInfo, getGmailSearchQuery, getDomainFromEmail } = require('./senderWhitelist');
+const { isWhitelistedSender, getSenderInfo, getGmailSearchQuery, getDomainFromEmail, recordPendingSender } = require('./senderService');
 const { parseTransactionAlert } = require('../parsers/htmlAlertParser');
 const { parseBankStatementPDF, parseCreditCardStatementPDF } = require('../parsers/pdfStatementParser');
 const { parseBillReminder } = require('../parsers/billReminderParser');
 const { parseExcelStatement } = require('../parsers/excelParser');
 const { categorizeTransaction } = require('./categorizationEngine');
 const { deduplicateTransactions } = require('./deduplicationEngine');
+const { parseWithLLM } = require('./llmParser');
+const { recordSuccess, recordFailure } = require('./templateRegistry');
+const { createLogger } = require('../utils/logger');
+const SyncRun = require('../models/SyncRun');
 const RawEmail = require('../models/RawEmail');
 const Transaction = require('../models/Transaction');
 const Account = require('../models/Account');
 const Bill = require('../models/Bill');
 const User = require('../models/User');
 
+const LLM_CONFIDENCE_THRESHOLD = 50;
+
 class EmailProcessingEngine {
   constructor(userId) {
     this.userId = userId;
-    this.stats = { fetched: 0, parsed: 0, failed: 0, skipped: 0 };
+    this.stats = { fetched: 0, parsed: 0, failed: 0, skipped: 0, transactions: 0 };
+    this.syncRunId = null;
+    this.logger = createLogger('EmailSync');
+    this.errorCounts = {};
+    this.gmailApiCalls = 0;
+    this.gmailApiTime = 0;
+    this.parseTime = 0;
+    this.dbTime = 0;
+    this.llmCalls = 0;
+    this.llmTokensTotal = 0;
+    this.attachmentsProcessed = 0;
   }
 
   /**
    * Full sync: fetch emails, parse, categorize, deduplicate
+   * Now fully instrumented with sync run tracking
    */
   async runFullSync({ sinceDate } = {}) {
-    console.log(`[EmailSync] Starting sync for user ${this.userId}`);
+    // Build search query (async — reads from DB)
+    const query = await this.buildSearchQuery(sinceDate);
 
-    // Initialize Gmail service
-    const gmail = await new GmailService(this.userId).init();
+    // Create sync run record
+    const syncRun = await SyncRun.create(this.userId, sinceDate ? 'incremental' : 'full', {
+      searchQuery: query,
+      sinceDate,
+    });
+    this.syncRunId = syncRun.id;
+    this.logger = this.logger.withSyncRunId(syncRun.id);
 
-    // Build search query
-    const query = this.buildSearchQuery(sinceDate);
-    console.log(`[EmailSync] Search query: ${query}`);
+    this.logger.info('Starting sync', { run_type: syncRun.run_type, since_date: sinceDate?.toISOString() });
 
-    // Fetch email list
-    const messages = await gmail.listMessages(query);
-    console.log(`[EmailSync] Found ${messages.length} messages`);
+    try {
+      // Initialize Gmail service
+      const gmail = await new GmailService(this.userId).init();
 
-    // Process each email
-    for (const msg of messages) {
-      try {
-        // Skip already processed
-        const exists = await RawEmail.existsByGmailId(msg.id);
-        if (exists) {
-          this.stats.skipped++;
-          continue;
+      // Fetch email list
+      const listResult = await gmail.listMessages(query);
+      const messages = listResult.messages;
+      this.gmailApiCalls += listResult.timing.api_calls;
+      this.gmailApiTime += listResult.timing.duration_ms;
+
+      this.logger.info(`Found ${messages.length} messages`, { count: messages.length });
+      await SyncRun.incrementCounters(this.syncRunId, { emails_found: messages.length });
+
+      // Process each email
+      for (let i = 0; i < messages.length; i++) {
+        const msg = messages[i];
+        try {
+          await this.processMessage(msg, gmail);
+        } catch (err) {
+          this.logger.error(`Error processing message ${msg.id}`, { error: err.message, gmail_id: msg.id });
+          this.recordError('unknown');
+          this.stats.failed++;
         }
 
-        // Fetch full message
-        const fullMessage = await gmail.getMessage(msg.id);
-        const parsed = GmailService.parseMessage(fullMessage);
-
-        // Check whitelist
-        if (!isWhitelistedSender(parsed.sender)) {
-          this.stats.skipped++;
-          continue;
+        // Batch update counters every 10 emails
+        if ((i + 1) % 10 === 0) {
+          await this.flushCounters();
         }
-
-        // Classify and store email
-        const category = this.classifyEmail(parsed);
-        const rawEmail = await RawEmail.create({
-          ...parsed,
-          user_id: this.userId,
-          email_category: category,
-        });
-
-        if (!rawEmail) {
-          this.stats.skipped++;
-          continue;
-        }
-
-        // Process based on category
-        await this.processEmail(rawEmail, gmail, fullMessage);
-        this.stats.fetched++;
-      } catch (err) {
-        console.error(`[EmailSync] Error processing message ${msg.id}:`, err.message);
-        this.stats.failed++;
       }
+
+      // Run deduplication
+      this.logger.info('Running deduplication...');
+      const dedupResult = await deduplicateTransactions(this.userId);
+      this.logger.info('Deduplication complete', dedupResult.stats);
+
+      // Update last sync time
+      await User.updateLastSync(this.userId);
+
+      // Finalize sync run
+      await this.flushCounters();
+      await SyncRun.incrementCounters(this.syncRunId, {
+        transactions_deduplicated: dedupResult.stats.output,
+        gmail_api_calls: this.gmailApiCalls,
+        gmail_api_time_ms: this.gmailApiTime,
+        parse_time_ms: this.parseTime,
+        llm_calls: this.llmCalls,
+        llm_tokens_total: this.llmTokensTotal,
+        attachments_processed: this.attachmentsProcessed,
+      });
+      await SyncRun.complete(this.syncRunId, 'completed', this.errorCounts);
+
+      this.logger.info('Sync complete', { stats: this.stats, dedup: dedupResult.stats });
+      return this.stats;
+    } catch (err) {
+      this.logger.error('Sync failed', { error: err.message });
+      await SyncRun.complete(this.syncRunId, 'failed', { fatal: err.message, ...this.errorCounts });
+      throw err;
     }
-
-    // Run deduplication
-    console.log('[EmailSync] Running deduplication...');
-    await deduplicateTransactions(this.userId);
-
-    // Update last sync time
-    await User.updateLastSync(this.userId);
-
-    console.log(`[EmailSync] Sync complete. Stats:`, this.stats);
-    return this.stats;
   }
 
   /**
    * Process initial onboarding scan (last N days)
    */
-  async runOnboardingScan(days = 90) {
+  async runOnboardingScan(days = 30) {
     const sinceDate = new Date();
     sinceDate.setDate(sinceDate.getDate() - days);
     return this.runFullSync({ sinceDate });
   }
 
-  buildSearchQuery(sinceDate) {
-    const searchBase = getGmailSearchQuery();
+  async buildSearchQuery(sinceDate) {
+    const searchBase = await getGmailSearchQuery();
     if (sinceDate) {
       const dateStr = sinceDate.toISOString().split('T')[0].replace(/-/g, '/');
       return `${searchBase} after:${dateStr}`;
@@ -107,14 +131,65 @@ class EmailProcessingEngine {
   }
 
   /**
+   * Process a single Gmail message
+   */
+  async processMessage(msg, gmail) {
+    // Skip already processed
+    const exists = await RawEmail.existsByGmailId(msg.id);
+    if (exists) {
+      this.stats.skipped++;
+      return;
+    }
+
+    // Fetch full message (with timing)
+    const msgResult = await gmail.getMessage(msg.id);
+    const fullMessage = msgResult.data;
+    this.gmailApiCalls++;
+    this.gmailApiTime += msgResult.timing.duration_ms;
+
+    const parsed = GmailService.parseMessage(fullMessage);
+    const domain = getDomainFromEmail(parsed.sender);
+
+    // Check whitelist
+    const whitelisted = await isWhitelistedSender(parsed.sender);
+    if (!whitelisted) {
+      // Record potential new sender if it looks financial
+      if (/debit|credit|transaction|statement|bill|payment|balance/i.test(parsed.subject || '')) {
+        await recordPendingSender(domain, parsed.sender, parsed.subject);
+        this.logger.info('Potential new financial sender detected', { domain, subject: parsed.subject });
+      }
+      this.stats.skipped++;
+      return;
+    }
+
+    // Classify and store email
+    const senderInfo = await getSenderInfo(parsed.sender);
+    const category = this.classifyEmail(parsed, senderInfo);
+    const rawEmail = await RawEmail.create({
+      ...parsed,
+      user_id: this.userId,
+      email_category: category,
+      sync_run_id: this.syncRunId,
+    });
+
+    if (!rawEmail) {
+      this.stats.skipped++;
+      return;
+    }
+
+    // Process based on category with per-email timing
+    const emailStartTime = Date.now();
+    await this.processEmail(rawEmail, gmail, fullMessage, senderInfo);
+    this.stats.fetched++;
+  }
+
+  /**
    * Classify email into categories based on sender and content
    */
-  classifyEmail(parsed) {
-    const senderInfo = getSenderInfo(parsed.sender);
+  classifyEmail(parsed, senderInfo) {
     const subject = (parsed.subject || '').toLowerCase();
     const hasAttachments = parsed.attachments && parsed.attachments.length > 0;
 
-    // Check for statement attachments
     if (hasAttachments) {
       const hasPdf = parsed.attachments.some(a =>
         a.mimeType === 'application/pdf' || a.filename?.endsWith('.pdf')
@@ -133,76 +208,165 @@ class EmailProcessingEngine {
       if (hasExcel && /statement/i.test(subject)) return 'statement_excel';
     }
 
-    // Bill reminders
     if (senderInfo?.type === 'biller' || /bill|due|payment\s+reminder|renew/i.test(subject)) {
       return 'bill_reminder';
     }
 
-    // Transaction alerts
     if (/debit|credit|transaction|spent|received|payment|transfer|UPI/i.test(subject)) {
       return 'transaction_alert';
     }
 
-    // Default based on sender type
     if (senderInfo?.type === 'bank' || senderInfo?.type === 'upi') return 'transaction_alert';
     if (senderInfo?.type === 'credit_card') return 'transaction_alert';
     if (senderInfo?.type === 'investment') return 'investment_statement';
 
-    return 'transaction_alert'; // Default
+    return 'transaction_alert';
   }
 
   /**
-   * Process a classified email
+   * Process a classified email with full instrumentation
    */
-  async processEmail(rawEmail, gmail, fullMessage) {
+  async processEmail(rawEmail, gmail, fullMessage, senderInfo) {
+    const emailStartTime = Date.now();
+    let parserUsed = null;
+    let llmUsed = false;
+    let llmTokens = 0;
+    let confidence = 0;
+    let errorType = null;
+    let txnCount = 0;
+    let processingDetails = {};
+
     try {
-      switch (rawEmail.email_category) {
-        case 'transaction_alert':
-          await this.processTransactionAlert(rawEmail);
-          break;
-        case 'statement_pdf':
-        case 'cc_statement_pdf':
-          await this.processStatementPDF(rawEmail, gmail, fullMessage);
-          break;
-        case 'statement_excel':
-          await this.processStatementExcel(rawEmail, gmail, fullMessage);
-          break;
-        case 'bill_reminder':
-          await this.processBillReminder(rawEmail);
-          break;
-        case 'investment_statement':
-          await this.processInvestmentStatement(rawEmail, gmail, fullMessage);
-          break;
-        default:
-          await this.processTransactionAlert(rawEmail);
+      const result = await this.dispatchProcessing(rawEmail, gmail, fullMessage, senderInfo);
+      parserUsed = result.parserUsed;
+      llmUsed = result.llmUsed;
+      llmTokens = result.llmTokens || 0;
+      confidence = result.confidence;
+      txnCount = result.txnCount;
+      processingDetails = result.details || {};
+
+      if (llmUsed) {
+        this.llmCalls++;
+        this.llmTokensTotal += llmTokens;
       }
 
       await RawEmail.markProcessed(rawEmail.id, { status: 'success' });
       this.stats.parsed++;
+      this.stats.transactions += txnCount;
+
+      // Record template success
+      const domain = getDomainFromEmail(rawEmail.sender);
+      if (domain) {
+        await recordSuccess(domain, rawEmail.email_category, rawEmail.body_html, rawEmail.id);
+      }
     } catch (err) {
-      console.error(`[EmailProcess] Error processing email ${rawEmail.id}:`, err.message);
+      errorType = this.classifyError(err);
+      this.logger.error(`Processing failed for ${rawEmail.id}`, { error: err.message, error_type: errorType, category: rawEmail.email_category });
       await RawEmail.markProcessed(rawEmail.id, { status: 'failed', errors: err.message });
+      this.recordError(errorType);
       this.stats.failed++;
+
+      // Record template failure
+      const domain = getDomainFromEmail(rawEmail.sender);
+      if (domain) {
+        await recordFailure(domain, rawEmail.email_category, rawEmail.body_html);
+      }
+    }
+
+    const processingTime = Date.now() - emailStartTime;
+    this.parseTime += processingTime;
+
+    // Update raw_email with observability data
+    await RawEmail.updateObservability(rawEmail.id, {
+      processing_time_ms: processingTime,
+      parser_used: parserUsed,
+      llm_used: llmUsed,
+      llm_tokens_used: llmTokens,
+      confidence_score: confidence,
+      error_type: errorType,
+      transactions_extracted: txnCount,
+      processing_details: processingDetails,
+    });
+  }
+
+  /**
+   * Dispatch to the correct parser with LLM fallback
+   */
+  async dispatchProcessing(rawEmail, gmail, fullMessage, senderInfo) {
+    switch (rawEmail.email_category) {
+      case 'transaction_alert':
+        return this.processTransactionAlert(rawEmail, senderInfo);
+      case 'statement_pdf':
+      case 'cc_statement_pdf':
+        return this.processStatementPDF(rawEmail, gmail, fullMessage, senderInfo);
+      case 'statement_excel':
+        return this.processStatementExcel(rawEmail, gmail, fullMessage);
+      case 'bill_reminder':
+        return this.processBillReminder(rawEmail, senderInfo);
+      case 'investment_statement':
+        return this.processInvestmentStatement(rawEmail, gmail, fullMessage);
+      default:
+        return this.processTransactionAlert(rawEmail, senderInfo);
     }
   }
 
-  async processTransactionAlert(rawEmail) {
+  async processTransactionAlert(rawEmail, senderInfo) {
     const body = rawEmail.body_html || rawEmail.body_text;
-    const parsed = parseTransactionAlert(body, rawEmail.sender, rawEmail.subject);
-    if (!parsed) return;
 
-    // Categorize
+    // 1. Try regex parser
+    const regexResult = parseTransactionAlert(body, rawEmail.sender, rawEmail.subject, senderInfo);
+    let useResult = regexResult;
+    let llmUsed = false;
+    let llmTokens = 0;
+
+    // 2. If regex fails or low confidence, try LLM
+    if (!regexResult.data || regexResult.meta.confidence < LLM_CONFIDENCE_THRESHOLD) {
+      try {
+        const llmResult = await parseWithLLM(body, 'transaction_alert', {
+          sender: rawEmail.sender,
+          subject: rawEmail.subject,
+        }, this.syncRunId);
+
+        llmUsed = true;
+        llmTokens = llmResult.meta.tokens_used || 0;
+
+        if (llmResult.data && llmResult.meta.confidence > (regexResult.meta?.confidence || 0)) {
+          // Normalize LLM result to match parser output format
+          const llmData = llmResult.data;
+          useResult = {
+            data: {
+              amount: llmData.transaction_type === 'debit' ? -Math.abs(llmData.amount) : Math.abs(llmData.amount),
+              date: llmData.date || new Date().toISOString().split('T')[0],
+              merchant: llmData.merchant || 'Unknown',
+              account_last4: llmData.account_last4 || null,
+              account_type: llmData.account_type || 'savings',
+              transaction_type: llmData.transaction_type || 'debit',
+              payment_method: llmData.payment_method || 'Other',
+              balance_after: llmData.balance_after || null,
+              source: 'email_alert',
+              metadata: { sender: rawEmail.sender, institution: senderInfo?.name, parsed_by: 'llm' },
+            },
+            meta: { ...llmResult.meta, parser: 'llm' },
+          };
+        }
+      } catch (err) {
+        this.logger.warn('LLM fallback failed', { error: err.message, email_id: rawEmail.id });
+      }
+    }
+
+    if (!useResult.data) {
+      return { parserUsed: useResult.meta?.parser || 'htmlAlertParser', llmUsed, llmTokens, confidence: 0, txnCount: 0, details: useResult.meta };
+    }
+
+    const parsed = useResult.data;
     parsed.category = categorizeTransaction(parsed.merchant);
 
-    // Store raw transaction
     await Transaction.insertRaw({
       ...parsed,
       user_id: this.userId,
       email_id: rawEmail.id,
     });
 
-    // Upsert account
-    const senderInfo = getSenderInfo(rawEmail.sender);
     if (parsed.account_last4) {
       await Account.upsert({
         userId: this.userId,
@@ -212,25 +376,82 @@ class EmailProcessingEngine {
         balance: parsed.balance_after,
       });
     }
+
+    return {
+      parserUsed: useResult.meta?.parser || 'htmlAlertParser',
+      llmUsed,
+      llmTokens,
+      confidence: useResult.meta?.confidence || 0,
+      txnCount: 1,
+      details: useResult.meta,
+    };
   }
 
-  async processStatementPDF(rawEmail, gmail, fullMessage) {
-    if (!rawEmail.attachments || rawEmail.attachments.length === 0) return;
+  async processStatementPDF(rawEmail, gmail, fullMessage, senderInfo) {
+    if (!rawEmail.attachments || rawEmail.attachments.length === 0) {
+      return { parserUsed: 'pdfStatementParser', llmUsed: false, llmTokens: 0, confidence: 0, txnCount: 0 };
+    }
 
-    for (const attachment of JSON.parse(rawEmail.attachments)) {
+    let totalTxns = 0;
+    let bestConfidence = 0;
+    let parserUsed = 'pdfStatementParser';
+    let llmUsed = false;
+    let llmTokens = 0;
+    const attachments = typeof rawEmail.attachments === 'string' ? JSON.parse(rawEmail.attachments) : rawEmail.attachments;
+
+    for (const attachment of attachments) {
       if (!attachment.filename?.endsWith('.pdf')) continue;
 
-      // Download attachment
-      const pdfBuffer = await gmail.getAttachment(rawEmail.gmail_message_id, attachment.attachmentId);
+      const attachResult = await gmail.getAttachment(rawEmail.gmail_message_id, attachment.attachmentId);
+      this.gmailApiCalls++;
+      this.gmailApiTime += attachResult.timing.duration_ms;
+      this.attachmentsProcessed++;
 
-      // Parse based on type
       const isCC = rawEmail.email_category === 'cc_statement_pdf';
-      const result = isCC
-        ? await parseCreditCardStatementPDF(pdfBuffer)
-        : await parseBankStatementPDF(pdfBuffer);
+      const regexResult = isCC
+        ? await parseCreditCardStatementPDF(attachResult.buffer)
+        : await parseBankStatementPDF(attachResult.buffer);
+
+      let useResult = regexResult;
+
+      // LLM fallback for PDF if regex found no transactions
+      if (!regexResult.data || regexResult.meta.confidence < LLM_CONFIDENCE_THRESHOLD) {
+        if (regexResult.meta?.error === 'pdf_encrypted' || regexResult.meta?.error === 'pdf_scanned') {
+          // Can't do much with encrypted/scanned PDFs even with LLM
+          parserUsed = regexResult.meta.parser;
+          bestConfidence = 0;
+        } else {
+          // Try LLM with the extracted text
+          try {
+            const pdfParse = require('pdf-parse');
+            const pdfData = await pdfParse(attachResult.buffer);
+            const llmResult = await parseWithLLM(
+              pdfData.text,
+              isCC ? 'cc_statement_pdf' : 'bank_statement_pdf',
+              { sender: rawEmail.sender },
+              this.syncRunId
+            );
+            llmUsed = true;
+            llmTokens += llmResult.meta.tokens_used || 0;
+
+            if (llmResult.data && llmResult.meta.confidence > (regexResult.meta?.confidence || 0)) {
+              useResult = llmResult;
+              parserUsed = 'llm';
+            }
+          } catch (err) {
+            this.logger.warn('LLM PDF fallback failed', { error: err.message });
+          }
+        }
+      }
+
+      if (!useResult.data) continue;
+
+      const result = useResult.data;
+      bestConfidence = Math.max(bestConfidence, useResult.meta?.confidence || 0);
 
       // Store transactions
-      for (const txn of result.transactions) {
+      const txns = result.transactions || [];
+      for (const txn of txns) {
         txn.category = categorizeTransaction(txn.merchant);
         await Transaction.insertRaw({
           ...txn,
@@ -238,11 +459,11 @@ class EmailProcessingEngine {
           email_id: rawEmail.id,
         });
       }
+      totalTxns += txns.length;
 
-      // Update account with statement data
+      // Update account
       const accountLast4 = isCC ? result.cardLast4 : result.accountLast4;
       if (accountLast4) {
-        const senderInfo = getSenderInfo(rawEmail.sender);
         await Account.upsert({
           userId: this.userId,
           institutionName: result.institutionName || senderInfo?.name || 'Unknown',
@@ -255,18 +476,32 @@ class EmailProcessingEngine {
         });
       }
     }
+
+    return { parserUsed, llmUsed, llmTokens, confidence: bestConfidence, txnCount: totalTxns };
   }
 
   async processStatementExcel(rawEmail, gmail, fullMessage) {
-    if (!rawEmail.attachments || rawEmail.attachments.length === 0) return;
+    if (!rawEmail.attachments || rawEmail.attachments.length === 0) {
+      return { parserUsed: 'excelParser', llmUsed: false, llmTokens: 0, confidence: 0, txnCount: 0 };
+    }
 
-    for (const attachment of JSON.parse(rawEmail.attachments)) {
+    let totalTxns = 0;
+    let bestConfidence = 0;
+    const attachments = typeof rawEmail.attachments === 'string' ? JSON.parse(rawEmail.attachments) : rawEmail.attachments;
+
+    for (const attachment of attachments) {
       if (!attachment.filename?.match(/\.(xlsx?|csv)$/i)) continue;
 
-      const buffer = await gmail.getAttachment(rawEmail.gmail_message_id, attachment.attachmentId);
-      const result = await parseExcelStatement(buffer);
+      const attachResult = await gmail.getAttachment(rawEmail.gmail_message_id, attachment.attachmentId);
+      this.gmailApiCalls++;
+      this.gmailApiTime += attachResult.timing.duration_ms;
+      this.attachmentsProcessed++;
 
-      for (const txn of result.transactions) {
+      const result = await parseExcelStatement(attachResult.buffer);
+      bestConfidence = Math.max(bestConfidence, result.meta?.confidence || 0);
+
+      const txns = result.data?.transactions || [];
+      for (const txn of txns) {
         txn.category = categorizeTransaction(txn.merchant);
         await Transaction.insertRaw({
           ...txn,
@@ -274,25 +509,104 @@ class EmailProcessingEngine {
           email_id: rawEmail.id,
         });
       }
+      totalTxns += txns.length;
     }
+
+    return { parserUsed: 'excelParser', llmUsed: false, llmTokens: 0, confidence: bestConfidence, txnCount: totalTxns };
   }
 
-  async processBillReminder(rawEmail) {
+  async processBillReminder(rawEmail, senderInfo) {
     const body = rawEmail.body_html || rawEmail.body_text;
-    const parsed = parseBillReminder(body, rawEmail.sender, rawEmail.subject);
-    if (!parsed) return;
+
+    // Regex first
+    const regexResult = parseBillReminder(body, rawEmail.sender, rawEmail.subject, senderInfo);
+    let useResult = regexResult;
+    let llmUsed = false;
+    let llmTokens = 0;
+
+    // LLM fallback
+    if (!regexResult.data || regexResult.meta.confidence < LLM_CONFIDENCE_THRESHOLD) {
+      try {
+        const llmResult = await parseWithLLM(body, 'bill_reminder', {
+          sender: rawEmail.sender,
+          subject: rawEmail.subject,
+        }, this.syncRunId);
+
+        llmUsed = true;
+        llmTokens = llmResult.meta.tokens_used || 0;
+
+        if (llmResult.data && llmResult.meta.confidence > (regexResult.meta?.confidence || 0)) {
+          useResult = {
+            data: {
+              ...llmResult.data,
+              source: 'bill_reminder',
+              metadata: { sender: rawEmail.sender },
+            },
+            meta: { ...llmResult.meta, parser: 'llm' },
+          };
+        }
+      } catch (err) {
+        this.logger.warn('LLM bill reminder fallback failed', { error: err.message });
+      }
+    }
+
+    if (!useResult.data) {
+      return { parserUsed: useResult.meta?.parser || 'billReminderParser', llmUsed, llmTokens, confidence: 0, txnCount: 0, details: useResult.meta };
+    }
 
     await Bill.create({
-      ...parsed,
+      ...useResult.data,
       user_id: this.userId,
       reminder_email_id: rawEmail.id,
     });
+
+    return {
+      parserUsed: useResult.meta?.parser || 'billReminderParser',
+      llmUsed,
+      llmTokens,
+      confidence: useResult.meta?.confidence || 0,
+      txnCount: 0,
+      details: useResult.meta,
+    };
   }
 
   async processInvestmentStatement(rawEmail, gmail, fullMessage) {
-    // Placeholder for MF CAS and demat statement parsing
-    // For now, store the raw email for future processing
-    console.log(`[EmailProcess] Investment statement stored for manual review: ${rawEmail.id}`);
+    this.logger.info('Investment statement stored for manual review', { email_id: rawEmail.id });
+    return { parserUsed: 'none', llmUsed: false, llmTokens: 0, confidence: 0, txnCount: 0 };
+  }
+
+  // --- Helpers ---
+
+  classifyError(err) {
+    const msg = (err.message || '').toLowerCase();
+    if (msg.includes('token') || msg.includes('auth') || msg.includes('401')) return 'auth_error';
+    if (msg.includes('timeout') || msg.includes('ETIMEDOUT')) return 'timeout';
+    if (msg.includes('rate limit') || msg.includes('429')) return 'api_error';
+    if (msg.includes('password') || msg.includes('encrypted')) return 'pdf_encrypted';
+    if (msg.includes('scanned') || msg.includes('image')) return 'pdf_scanned';
+    if (msg.includes('parse') || msg.includes('regex')) return 'parser_error';
+    if (msg.includes('amount')) return 'no_amount';
+    if (msg.includes('date')) return 'invalid_date';
+    if (msg.includes('attachment')) return 'attachment_error';
+    return 'unknown';
+  }
+
+  recordError(type) {
+    this.errorCounts[type] = (this.errorCounts[type] || 0) + 1;
+  }
+
+  async flushCounters() {
+    try {
+      await SyncRun.incrementCounters(this.syncRunId, {
+        emails_processed: this.stats.fetched + this.stats.failed,
+        emails_parsed: this.stats.parsed,
+        emails_failed: this.stats.failed,
+        emails_skipped: this.stats.skipped,
+        transactions_extracted: this.stats.transactions,
+      });
+    } catch (err) {
+      this.logger.warn('Failed to flush counters', { error: err.message });
+    }
   }
 }
 

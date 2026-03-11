@@ -89,12 +89,16 @@ class GmailService {
 
   /**
    * List messages matching a query
+   * Returns { messages, timing: { duration_ms, api_calls } }
    */
   async listMessages(query, maxResults = 500) {
+    const startTime = Date.now();
+    let apiCalls = 0;
     const messages = [];
     let pageToken = null;
 
     do {
+      apiCalls++;
       const response = await this.gmail.users.messages.list({
         userId: 'me',
         q: query,
@@ -109,31 +113,38 @@ class GmailService {
       pageToken = response.data.nextPageToken;
     } while (pageToken && messages.length < maxResults);
 
-    return messages;
+    return { messages, timing: { duration_ms: Date.now() - startTime, api_calls: apiCalls } };
   }
 
   /**
-   * Get full message content
+   * Get full message content with timing
+   * Returns { data, timing: { duration_ms } }
    */
   async getMessage(messageId) {
+    const startTime = Date.now();
     const response = await this.gmail.users.messages.get({
       userId: 'me',
       id: messageId,
       format: 'full',
     });
-    return response.data;
+    return { data: response.data, timing: { duration_ms: Date.now() - startTime } };
   }
 
   /**
-   * Get attachment content
+   * Get attachment content with timing
+   * Returns { buffer, timing: { duration_ms } }
    */
   async getAttachment(messageId, attachmentId) {
+    const startTime = Date.now();
     const response = await this.gmail.users.attachments.get({
       userId: 'me',
       messageId,
       id: attachmentId,
     });
-    return Buffer.from(response.data.data, 'base64');
+    return {
+      buffer: Buffer.from(response.data.data, 'base64'),
+      timing: { duration_ms: Date.now() - startTime },
+    };
   }
 
   /**

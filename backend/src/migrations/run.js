@@ -1,13 +1,25 @@
 require('dotenv').config();
 const db = require('../config/database');
-const schema = require('./001_initial_schema');
+const schema001 = require('./001_initial_schema');
+const schema002 = require('./002_observability');
+
+const migrations = [
+  { name: '001_initial_schema', ...schema001 },
+  { name: '002_observability', ...schema002 },
+];
 
 async function migrate(direction = 'up') {
   try {
-    const sql = direction === 'down' ? schema.DOWN : schema.UP;
-    console.log(`Running migration ${direction}...`);
-    await db.query(sql);
-    console.log(`Migration ${direction} completed successfully.`);
+    const ordered = direction === 'down' ? [...migrations].reverse() : migrations;
+
+    for (const migration of ordered) {
+      const sql = direction === 'down' ? migration.DOWN : migration.UP;
+      console.log(`Running migration ${direction}: ${migration.name}...`);
+      await db.query(sql);
+      console.log(`Migration ${migration.name} ${direction} completed.`);
+    }
+
+    console.log(`All migrations ${direction} completed successfully.`);
   } catch (err) {
     console.error(`Migration ${direction} failed:`, err.message);
     process.exit(1);

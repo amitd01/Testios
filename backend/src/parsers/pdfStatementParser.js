@@ -3,11 +3,30 @@ const { parseIndianDate } = require('../utils/indianFormats');
 /**
  * Parse PDF bank and credit card statements
  * Uses pdf-parse to extract text, then regex for transaction lines
+ * Returns { data, meta } envelope for observability
  */
 async function parseBankStatementPDF(pdfBuffer) {
+  const startTime = Date.now();
+  const fieldsExtracted = [];
+  const fieldsMissing = [];
+  const warnings = [];
+
   const pdfParse = require('pdf-parse');
-  const data = await pdfParse(pdfBuffer);
-  const text = data.text;
+  let text;
+  try {
+    const data = await pdfParse(pdfBuffer);
+    text = data.text;
+  } catch (err) {
+    if (err.message?.includes('password')) {
+      return { data: null, meta: { parser: 'pdfStatementParser', duration_ms: Date.now() - startTime, confidence: 0, warnings: ['pdf_encrypted'], error: 'pdf_encrypted' } };
+    }
+    throw err;
+  }
+
+  // Detect scanned/image PDF
+  if (!text || text.replace(/\s/g, '').length < 50) {
+    return { data: null, meta: { parser: 'pdfStatementParser', duration_ms: Date.now() - startTime, confidence: 0, warnings: ['pdf_scanned_or_empty'], error: 'pdf_scanned' } };
+  }
 
   const accountLast4 = extractAccountNumber(text);
   const statementPeriod = extractStatementPeriod(text);
@@ -15,19 +34,48 @@ async function parseBankStatementPDF(pdfBuffer) {
   const closingBalance = extractClosingBalance(text);
   const transactions = extractTransactions(text, accountLast4);
 
+  if (accountLast4) fieldsExtracted.push('accountLast4'); else fieldsMissing.push('accountLast4');
+  if (statementPeriod) fieldsExtracted.push('statementPeriod'); else fieldsMissing.push('statementPeriod');
+  if (institutionName !== 'Unknown Bank') fieldsExtracted.push('institutionName'); else { fieldsMissing.push('institutionName'); warnings.push('institution_unknown'); }
+  if (closingBalance !== null) fieldsExtracted.push('closingBalance'); else fieldsMissing.push('closingBalance');
+  if (transactions.length > 0) fieldsExtracted.push('transactions'); else { fieldsMissing.push('transactions'); warnings.push('no_transactions_found'); }
+
+  let confidence = 0;
+  if (transactions.length > 0) confidence += 40;
+  if (accountLast4) confidence += 20;
+  if (statementPeriod) confidence += 15;
+  if (closingBalance !== null) confidence += 15;
+  if (institutionName !== 'Unknown Bank') confidence += 10;
+
+  const duration_ms = Date.now() - startTime;
+
   return {
-    accountLast4,
-    statementPeriod,
-    institutionName,
-    closingBalance,
-    transactions,
+    data: { accountLast4, statementPeriod, institutionName, closingBalance, transactions },
+    meta: { parser: 'pdfStatementParser', duration_ms, fields_extracted: fieldsExtracted, fields_missing: fieldsMissing, confidence, warnings, transactions_count: transactions.length, text_length: text.length },
   };
 }
 
 async function parseCreditCardStatementPDF(pdfBuffer) {
+  const startTime = Date.now();
+  const fieldsExtracted = [];
+  const fieldsMissing = [];
+  const warnings = [];
+
   const pdfParse = require('pdf-parse');
-  const data = await pdfParse(pdfBuffer);
-  const text = data.text;
+  let text;
+  try {
+    const data = await pdfParse(pdfBuffer);
+    text = data.text;
+  } catch (err) {
+    if (err.message?.includes('password')) {
+      return { data: null, meta: { parser: 'pdfCCParser', duration_ms: Date.now() - startTime, confidence: 0, warnings: ['pdf_encrypted'], error: 'pdf_encrypted' } };
+    }
+    throw err;
+  }
+
+  if (!text || text.replace(/\s/g, '').length < 50) {
+    return { data: null, meta: { parser: 'pdfCCParser', duration_ms: Date.now() - startTime, confidence: 0, warnings: ['pdf_scanned_or_empty'], error: 'pdf_scanned' } };
+  }
 
   const cardLast4 = extractCardNumber(text);
   const totalDue = extractTotalDue(text);
@@ -36,13 +84,23 @@ async function parseCreditCardStatementPDF(pdfBuffer) {
   const creditLimit = extractCreditLimit(text);
   const transactions = extractCCTransactions(text, cardLast4);
 
+  if (cardLast4) fieldsExtracted.push('cardLast4'); else fieldsMissing.push('cardLast4');
+  if (totalDue !== null) fieldsExtracted.push('totalDue'); else fieldsMissing.push('totalDue');
+  if (dueDate) fieldsExtracted.push('dueDate'); else fieldsMissing.push('dueDate');
+  if (transactions.length > 0) fieldsExtracted.push('transactions'); else warnings.push('no_transactions_found');
+
+  let confidence = 0;
+  if (transactions.length > 0) confidence += 40;
+  if (cardLast4) confidence += 20;
+  if (totalDue !== null) confidence += 15;
+  if (dueDate) confidence += 15;
+  if (creditLimit !== null) confidence += 10;
+
+  const duration_ms = Date.now() - startTime;
+
   return {
-    cardLast4,
-    totalDue,
-    minimumDue,
-    dueDate,
-    creditLimit,
-    transactions,
+    data: { cardLast4, totalDue, minimumDue, dueDate, creditLimit, transactions },
+    meta: { parser: 'pdfCCParser', duration_ms, fields_extracted: fieldsExtracted, fields_missing: fieldsMissing, confidence, warnings, transactions_count: transactions.length, text_length: text.length },
   };
 }
 
