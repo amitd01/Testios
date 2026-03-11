@@ -1,6 +1,6 @@
 const GmailService = require('../services/gmailService');
 const User = require('../models/User');
-const { generateToken } = require('../middleware/auth');
+const { generateToken, verifyToken } = require('../middleware/auth');
 const config = require('../config');
 
 const authController = {
@@ -74,11 +74,27 @@ const authController = {
    */
   async revokeAccess(req, res) {
     try {
-      const user = await User.findById(req.userId);
+      // This route bypasses auth middleware, so extract userId from token manually
+      let userId = null;
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        try {
+          const decoded = verifyToken(authHeader.split(' ')[1]);
+          userId = decoded.userId;
+        } catch (e) {
+          // Token invalid/expired — just clear client side
+        }
+      }
+
+      if (!userId) {
+        return res.json({ message: 'Session cleared' });
+      }
+
+      const user = await User.findById(userId);
       if (!user) {
         return res.json({ message: 'Session cleared (user not found in database)' });
       }
-      await User.deleteAllData(req.userId);
+      await User.deleteAllData(userId);
       res.json({ message: 'All data deleted and Gmail access revoked' });
     } catch (err) {
       console.error('Revoke access error:', err);

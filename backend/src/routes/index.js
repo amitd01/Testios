@@ -19,13 +19,13 @@ const router = express.Router();
 // Auth routes (no auth middleware)
 router.get('/auth/google', authController.initiateOAuth);
 router.get('/auth/google/callback', authController.handleCallback);
+router.post('/api/revoke', authController.revokeAccess);
 
 // Protected routes
 router.use('/api', authMiddleware);
 
 // User
 router.get('/api/me', authController.getCurrentUser);
-router.post('/api/revoke', authController.revokeAccess);
 
 // Dashboard
 router.get('/api/dashboard', dashboardController.getDashboard);
