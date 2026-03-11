@@ -239,4 +239,8 @@ async function parseWithLLM(content, contentType, context = {}, syncRunId = null
   }
 }
 
-module.exports = { parseWithLLM, PROMPTS };
+function clearCache() {
+  parseCache.clear();
+}
+
+module.exports = { parseWithLLM, PROMPTS, clearCache };

@@ -6,7 +6,7 @@ const { parseBillReminder } = require('../parsers/billReminderParser');
 const { parseExcelStatement } = require('../parsers/excelParser');
 const { categorizeTransaction } = require('./categorizationEngine');
 const { deduplicateTransactions } = require('./deduplicationEngine');
-const { parseWithLLM } = require('./llmParser');
+const { parseWithLLM, clearCache: clearLLMCache } = require('./llmParser');
 const { recordSuccess, recordFailure } = require('./templateRegistry');
 const { createLogger } = require('../utils/logger');
 const db = require('../config/database');
@@ -370,8 +370,9 @@ class EmailProcessingEngine {
     let llmUsed = false;
     let llmTokens = 0;
 
-    // 2. If regex fails or low confidence, try LLM
-    if (!regexResult.data || regexResult.meta.confidence < LLM_CONFIDENCE_THRESHOLD) {
+    // 2. If regex fails, low confidence, or missing merchant — try LLM
+    const regexMissingMerchant = regexResult.data && (!regexResult.data.merchant || regexResult.data.merchant === 'Unknown');
+    if (!regexResult.data || regexResult.meta.confidence < LLM_CONFIDENCE_THRESHOLD || regexMissingMerchant) {
       try {
         const llmResult = await parseWithLLM(body, 'transaction_alert', {
           sender: rawEmail.sender,
@@ -381,24 +382,38 @@ class EmailProcessingEngine {
         llmUsed = true;
         llmTokens = llmResult.meta.tokens_used || 0;
 
-        if (llmResult.data && llmResult.meta.confidence > (regexResult.meta?.confidence || 0)) {
-          // Normalize LLM result to match parser output format
+        if (llmResult.data) {
           const llmData = llmResult.data;
-          useResult = {
-            data: {
-              amount: llmData.transaction_type === 'debit' ? -Math.abs(llmData.amount) : Math.abs(llmData.amount),
-              date: llmData.date || new Date().toISOString().split('T')[0],
-              merchant: llmData.merchant || 'Unknown',
-              account_last4: llmData.account_last4 || null,
-              account_type: llmData.account_type || 'savings',
-              transaction_type: llmData.transaction_type || 'debit',
-              payment_method: llmData.payment_method || 'Other',
-              balance_after: llmData.balance_after || null,
-              source: 'email_alert',
-              metadata: { sender: rawEmail.sender, institution: senderInfo?.name, parsed_by: 'llm' },
-            },
-            meta: { ...llmResult.meta, parser: 'llm' },
-          };
+
+          if (regexMissingMerchant && regexResult.data && llmData.merchant) {
+            // Merge: keep regex data (amount, account, balance) but take LLM merchant & date
+            useResult = {
+              data: {
+                ...regexResult.data,
+                merchant: llmData.merchant || regexResult.data.merchant,
+                date: llmData.date || regexResult.data.date,
+                metadata: { ...regexResult.data.metadata, parsed_by: 'hybrid' },
+              },
+              meta: { ...regexResult.meta, parser: 'hybrid', llm_confidence: llmResult.meta.confidence },
+            };
+          } else if (llmResult.meta.confidence > (regexResult.meta?.confidence || 0)) {
+            // Full LLM replacement — LLM was better overall
+            useResult = {
+              data: {
+                amount: llmData.transaction_type === 'debit' ? -Math.abs(llmData.amount) : Math.abs(llmData.amount),
+                date: llmData.date || new Date().toISOString().split('T')[0],
+                merchant: llmData.merchant || 'Unknown',
+                account_last4: llmData.account_last4 || null,
+                account_type: llmData.account_type || 'savings',
+                transaction_type: llmData.transaction_type || 'debit',
+                payment_method: llmData.payment_method || 'Other',
+                balance_after: llmData.balance_after || null,
+                source: 'email_alert',
+                metadata: { sender: rawEmail.sender, institution: senderInfo?.name, parsed_by: 'llm' },
+              },
+              meta: { ...llmResult.meta, parser: 'llm' },
+            };
+          }
         }
       } catch (err) {
         this.logger.warn('LLM fallback failed', { error: err.message, email_id: rawEmail.id });
@@ -411,12 +426,16 @@ class EmailProcessingEngine {
 
     const parsed = useResult.data;
 
-    // Use email received date as fallback if parsed date is missing or invalid
-    if (!parsed.date || parsed.date === 'null') {
-      const emailDate = rawEmail.received_at || rawEmail.created_at;
-      parsed.date = emailDate
-        ? new Date(emailDate).toISOString().split('T')[0]
-        : new Date().toISOString().split('T')[0];
+    // Date resolution for transaction alerts:
+    // For alert emails, the email received date IS the transaction date (banks send alerts immediately).
+    // Use parsed body date only if it's a valid recent past date; otherwise prefer received_at.
+    const emailDate = rawEmail.received_at || rawEmail.created_at;
+    const emailDateStr = emailDate ? new Date(emailDate).toISOString().split('T')[0] : null;
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    if (!parsed.date || parsed.date === 'null' || parsed.date === todayStr) {
+      // If parsed date is missing or is today (likely a false match from footer), use email date
+      parsed.date = emailDateStr || todayStr;
     }
 
     // Validate date is not in the future or too old
@@ -425,10 +444,7 @@ class EmailProcessingEngine {
     const fiveYearsAgo = new Date();
     fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
     if (parsedDate > now || parsedDate < fiveYearsAgo) {
-      const emailDate = rawEmail.received_at || rawEmail.created_at;
-      parsed.date = emailDate
-        ? new Date(emailDate).toISOString().split('T')[0]
-        : new Date().toISOString().split('T')[0];
+      parsed.date = emailDateStr || todayStr;
     }
 
     // Clean up merchant name — use subject-derived merchant as fallback
@@ -681,6 +697,9 @@ class EmailProcessingEngine {
     this.syncRunId = syncRun.id;
     this.logger = this.logger.withSyncRunId(syncRun.id);
     this.logger.info('Starting re-parse of all stored emails');
+
+    // Clear LLM cache so re-parse uses fresh results with updated prompts
+    clearLLMCache();
 
     try {
       // 1. Clear existing parsed data (transactions, raw_transactions, bills) for this user
