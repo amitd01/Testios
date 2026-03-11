@@ -157,7 +157,7 @@ echo -e "${GREEN}✓${NC} Backend running at http://localhost:3001"
 
 # Start frontend
 echo "Starting frontend on port 3000..."
-cd frontend && PORT=3000 npx react-scripts start &
+cd frontend && PORT=3000 npm run dev &
 FRONTEND_PID=$!
 cd ..
 
