@@ -92,7 +92,7 @@ function extractAmount(text) {
 function extractDate(text) {
   const currentYear = new Date().getFullYear();
   const minYear = currentYear - 5;
-  const maxYear = currentYear + 1;
+  const maxYear = currentYear; // Don't accept future years
 
   // Try context-specific date patterns first (near transaction keywords)
   const contextPatterns = [
@@ -223,42 +223,72 @@ function isGarbageMerchant(name) {
   if (!name) return true;
   const lower = name.toLowerCase().trim();
 
-  // Common email CTA / link text
+  // Too short to be meaningful
+  if (lower.length <= 1) return true;
+
+  // Common email CTA / link text (exact and prefix matches)
   const garbagePatterns = [
-    /^know\s+more$/i,
-    /^click\s+here$/i,
-    /^view\s+details?$/i,
-    /^see\s+more$/i,
-    /^learn\s+more$/i,
-    /^check\s+now$/i,
-    /^pay\s+now$/i,
-    /^download$/i,
-    /^unsubscribe$/i,
+    /^know\s+more/i,
+    /^more\s+details?/i,
+    /^click\s+here/i,
+    /^view\s+details?/i,
+    /^see\s+more/i,
+    /^learn\s+more/i,
+    /^check\s+now/i,
+    /^pay\s+now/i,
+    /^download/i,
+    /^unsubscribe/i,
     /^your\s+account/i,
     /^your\s+.*\s+card/i,
     /^your\s+.*\s+bank/i,
     /^dear\s+customer/i,
     /^dear\s+/i,
+    /^important/i,
+    /^transaction\s+alert/i,
+    /^this\s+is\s+to/i,
+    /^we\s+wish\s+to/i,
+    /^update/i,
+    /^manage\s+/i,
+    /^report\s+/i,
   ];
   for (const pat of garbagePatterns) {
     if (pat.test(lower)) return true;
   }
+
+  // Bank/institution names used as merchant (these are senders, not merchants)
+  const bankNames = /^(hdfc|icici|sbi|axis|kotak|yes|idbi|bob|canara|pnb|union|indian|bandhan|rbl)\s*(bank)?$/i;
+  if (bankNames.test(lower)) return true;
 
   // Product title-like strings (too long, has model numbers)
   if (name.length > 50) return true;
   if (/\d{4,}/.test(name)) return true; // Contains 4+ digit numbers (model numbers, order IDs)
   if ((name.match(/\s/g) || []).length > 6) return true; // More than 6 words
 
+  // Looks like a full sentence or email subject rather than a merchant
+  if (/\b(ending|credit card|debit card|a\/c|account)\b/i.test(name)) return true;
+
   return false;
 }
 
 function cleanMerchantName(name) {
   if (!name) return null;
-  return name
+  let cleaned = name
     .replace(/[@\d]+$/, '')
     .replace(/\s+/g, ' ')
     .replace(/[*#]+/g, '')
-    .trim()
+    // Strip trailing "in" from "Amazonin", "Swiggyin" etc.
+    .replace(/in$/i, '')
+    .trim();
+
+  // Strip common prefixes that leak from subject lines
+  cleaned = cleaned
+    .replace(/^your\s+(?:hdfc|icici|sbi|axis|kotak)\s+(?:bank\s+)?(?:credit\s+)?card\s+ending\s+\d+\s+towards\s+/i, '')
+    .replace(/^your\s+account\s+/i, '')
+    .trim();
+
+  if (!cleaned) return null;
+
+  return cleaned
     .split(' ')
     .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
     .join(' ');
@@ -266,18 +296,18 @@ function cleanMerchantName(name) {
 
 function detectDebitOrCredit(text) {
   // Remove "credit card" phrases so they don't trigger false credit detection
-  const cleaned = text.replace(/credit\s*card/gi, 'CC').replace(/credit\s*limit/gi, 'CL');
+  const cleaned = text.replace(/credit\s*card/gi, 'CC').replace(/credit\s*limit/gi, 'CL').replace(/credit\s*score/gi, 'CS');
 
-  const debitPatterns = /debited|debit(?:ed)?|spent|paid|purchase[d]?|withdrawn|sent|charged|payment\s+of|transaction\s+of|used\s+at|used\s+on|auto[\s-]?pay/i;
-  const creditPatterns = /credited|credit(?:ed)?|received|deposited|refund|cashback|reversed|reversal|money\s+received|amount\s+received/i;
+  const debitPatterns = /debited|debit(?:ed)?|spent|paid|purchase[d]?|withdrawn|sent|charged|payment\s+of|transaction\s+of|used\s+at|used\s+on|auto[\s-]?pay|has\s+been\s+used/i;
+  const creditPatterns = /credited|credit(?:ed)?|received|deposited|refund(?:ed)?|cashback|reversed|reversal|money\s+received|amount\s+received|salary|interest\s+(?:credit|paid)|cr\b/i;
 
   const debitMatch = debitPatterns.test(cleaned);
   const creditMatch = creditPatterns.test(cleaned);
 
   // If both match, count occurrences — debit keywords are typically more specific
   if (debitMatch && creditMatch) {
-    const debitCount = (cleaned.match(/debited|debit|spent|paid|purchase|withdrawn|sent|charged/gi) || []).length;
-    const creditCount = (cleaned.match(/credited|received|deposited|refund|cashback|reversed/gi) || []).length;
+    const debitCount = (cleaned.match(/debited|debit|spent|paid|purchase|withdrawn|sent|charged|used/gi) || []).length;
+    const creditCount = (cleaned.match(/credited|received|deposited|refund|cashback|reversed|salary/gi) || []).length;
     return debitCount >= creditCount; // true = debit
   }
 

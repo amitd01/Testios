@@ -27,16 +27,19 @@ function extractMerchantFromSubject(subject) {
   if (!subject) return null;
 
   // "towards <merchant>" pattern (HDFC style)
-  const towardsMatch = subject.match(/towards\s+(.+?)(?:\s+on|\s+for|\s+was|\.|,|$)/i);
+  // e.g. "Your Hdfc Bank Credit Card Ending 4141 Towards Amazon Pay India"
+  const towardsMatch = subject.match(/towards\s+(.+?)(?:\s+on\s+\d|\s+for\s+Rs|\s+was|\.|,|$)/i);
   if (towardsMatch) {
     let merchant = towardsMatch[1].trim();
     // Clean up trailing "in" from "Amazonin" etc.
     merchant = merchant.replace(/in$/i, '').trim();
-    if (merchant.length > 1 && merchant.length < 40) return merchant;
+    // Remove trailing "Priva" truncation artifacts
+    merchant = merchant.replace(/\s+Priva$/i, '').trim();
+    if (merchant.length > 1 && merchant.length < 40 && !/\d{4,}/.test(merchant)) return merchant;
   }
 
   // "at <merchant>" pattern
-  const atMatch = subject.match(/(?:at|on)\s+([A-Z][A-Za-z0-9\s&.'-]+?)(?:\s+on|\s+for|$)/i);
+  const atMatch = subject.match(/(?:spent|paid|purchase[d]?|transacted|used)\s+(?:at|on)\s+([A-Z][A-Za-z0-9\s&.'-]+?)(?:\s+on\s+\d|\s+for|$)/i);
   if (atMatch) {
     const merchant = atMatch[1].trim();
     if (merchant.length > 1 && merchant.length < 40) return merchant;
@@ -411,6 +414,24 @@ class EmailProcessingEngine {
     if (!parsed.merchant || parsed.merchant === 'Unknown') {
       const subjectMerchant = extractMerchantFromSubject(rawEmail.subject);
       if (subjectMerchant) parsed.merchant = subjectMerchant;
+    }
+
+    // Final merchant cleanup: strip bank/card preamble that leaked through
+    if (parsed.merchant && /\b(credit card|debit card|ending\s+\d{4})\b/i.test(parsed.merchant)) {
+      const towards = parsed.merchant.match(/towards\s+(.+)/i);
+      if (towards) {
+        parsed.merchant = towards[1].trim().replace(/in$/i, '').trim();
+      } else {
+        parsed.merchant = 'Unknown';
+      }
+    }
+
+    // Title-case the merchant name
+    if (parsed.merchant && parsed.merchant !== 'Unknown') {
+      parsed.merchant = parsed.merchant
+        .split(' ')
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join(' ');
     }
 
     parsed.category = categorizeTransaction(parsed.merchant);

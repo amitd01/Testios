@@ -118,16 +118,37 @@ function validateLLMResponse(parsed, contentType) {
 
   // Reject garbage merchant names from LLM
   if (parsed.merchant) {
-    const garbageNames = /^(know more|click here|view details?|see more|learn more|check now|pay now|download|unsubscribe|dear customer)$/i;
+    const garbageNames = /^(know more|more details?|click here|view details?|see more|learn more|check now|pay now|download|unsubscribe|dear customer|important|transaction alert|update|your account.*)$/i;
     if (garbageNames.test(parsed.merchant.trim())) {
       warnings.push('garbage_merchant_name');
       parsed.merchant = null;
     }
+    // Reject merchant names containing bank/card preamble
+    if (parsed.merchant && /\b(credit card|debit card|ending\s+\d{4}|a\/c\s+\d)/i.test(parsed.merchant)) {
+      // Try to extract merchant after "towards" if present
+      const towardsMatch = parsed.merchant.match(/towards\s+(.+)/i);
+      if (towardsMatch) {
+        parsed.merchant = towardsMatch[1].trim().replace(/in$/i, '').trim();
+      } else {
+        warnings.push('merchant_looks_like_subject');
+        parsed.merchant = null;
+      }
+    }
+    // Reject merchant names containing 4+ digit numbers (model numbers, order IDs)
+    if (parsed.merchant && /\d{4,}/.test(parsed.merchant)) {
+      parsed.merchant = parsed.merchant.split(/\s+/).filter(w => !/\d{4,}/.test(w)).join(' ').trim();
+      if (!parsed.merchant) parsed.merchant = null;
+      warnings.push('merchant_name_had_numbers');
+    }
     // Reject merchant names that are too long (product descriptions)
     if (parsed.merchant && parsed.merchant.length > 50) {
-      // Try to extract just the first meaningful part
       parsed.merchant = parsed.merchant.split(/\s+/).slice(0, 3).join(' ');
       warnings.push('merchant_name_truncated');
+    }
+    // Reject bank names as merchants
+    if (parsed.merchant && /^(hdfc|icici|sbi|axis|kotak|yes|idbi)\s*(bank)?$/i.test(parsed.merchant.trim())) {
+      warnings.push('bank_name_as_merchant');
+      parsed.merchant = null;
     }
   }
 
