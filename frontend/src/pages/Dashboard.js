@@ -200,6 +200,23 @@ export default function Dashboard() {
               </div>
             </div>
           )}
+          {emailSync.rawTransactions > 0 && (
+            <div style={{ marginTop: 12, fontSize: 12, color: 'var(--text-muted)' }}>
+              {emailSync.rawTransactions} transactions extracted
+            </div>
+          )}
+          {emailSync.categories && Object.keys(emailSync.categories).length > 0 && (
+            <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {Object.entries(emailSync.categories).map(([cat, count]) => (
+                <span key={cat} style={{
+                  fontSize: 11, padding: '2px 8px', borderRadius: 12,
+                  background: 'var(--bg-tertiary)', color: 'var(--text-secondary)',
+                }}>
+                  {cat.replace(/_/g, ' ')}: {count}
+                </span>
+              ))}
+            </div>
+          )}
         </Card>
       </div>
 

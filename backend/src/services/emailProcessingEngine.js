@@ -627,21 +627,11 @@ class EmailProcessingEngine {
       bestConfidence = Math.max(bestConfidence, useResult.meta?.confidence || 0);
 
       // Store transactions
-      const txns = result.transactions || [];
-      for (const txn of txns) {
-        txn.category = categorizeTransaction(txn.merchant);
-        await Transaction.insertRaw({
-          ...txn,
-          user_id: this.userId,
-          email_id: rawEmail.id,
-        });
-      }
-      totalTxns += txns.length;
-
-      // Update account
+      // Upsert account BEFORE inserting transactions so we have account_id
       const accountLast4 = isCC ? result.cardLast4 : result.accountLast4;
+      let account = null;
       if (accountLast4) {
-        await Account.upsert({
+        account = await Account.upsert({
           userId: this.userId,
           institutionName: result.institutionName || senderInfo?.name || 'Unknown',
           accountType: isCC ? 'credit_card' : 'savings',
@@ -653,6 +643,22 @@ class EmailProcessingEngine {
           statementEmailId: rawEmail.id,
         });
       }
+
+      const txns = result.transactions || [];
+      for (const txn of txns) {
+        txn.category = categorizeTransaction(txn.merchant);
+        await Transaction.insertRaw({
+          ...txn,
+          source: txn.source || 'statement_pdf',
+          instrument_type: txn.instrument_type || (isCC ? 'credit_card' : 'savings_account'),
+          financial_type: txn.financial_type || null,
+          date_source: txn.date_source || 'statement',
+          account_id: account?.id || null,
+          user_id: this.userId,
+          email_id: rawEmail.id,
+        });
+      }
+      totalTxns += txns.length;
     }
 
     return { parserUsed, llmUsed, llmTokens, confidence: bestConfidence, txnCount: totalTxns };
@@ -683,6 +689,11 @@ class EmailProcessingEngine {
         txn.category = categorizeTransaction(txn.merchant);
         await Transaction.insertRaw({
           ...txn,
+          source: txn.source || 'statement_excel',
+          instrument_type: txn.instrument_type || 'savings_account',
+          financial_type: txn.financial_type || null,
+          date_source: txn.date_source || 'statement',
+          account_id: null,
           user_id: this.userId,
           email_id: rawEmail.id,
         });

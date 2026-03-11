@@ -71,22 +71,29 @@ async function deduplicateTransactions(userId) {
   // Insert harmonized transactions
   console.log(`[Dedup] Inserting ${harmonized.length} harmonized transactions`);
   const results = [];
+  let insertErrors = 0;
   for (const txn of harmonized) {
     try {
       const result = await Transaction.insertHarmonized(txn);
       results.push(result);
     } catch (err) {
+      insertErrors++;
       console.error(`[Dedup] Failed to insert harmonized txn: ${err.message}`, {
         merchant: txn.merchant, amount: txn.amount, date: txn.date,
         transaction_type: txn.transaction_type, sources: txn.sources,
+        account_id: txn.account_id,
       });
     }
+  }
+
+  if (insertErrors > 0) {
+    console.warn(`[Dedup] ${insertErrors}/${harmonized.length} harmonized transactions failed to insert`);
   }
 
   const duration_ms = Date.now() - startTime;
   return {
     harmonized: results,
-    stats: { input: rawTxns.length, output: harmonized.length, merged: mergedCount, duration_ms },
+    stats: { input: rawTxns.length, output: results.length, merged: mergedCount, insert_errors: insertErrors, duration_ms },
   };
 }
 

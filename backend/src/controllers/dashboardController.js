@@ -109,6 +109,8 @@ const dashboardController = {
           successful: parseInt(emailStats?.success) || 0,
           failed: parseInt(emailStats?.failed) || 0,
           pending: parseInt(emailStats?.pending) || 0,
+          categories: emailStats?.categories || {},
+          rawTransactions: emailStats?.rawTransactions || 0,
         },
         recentTransactions: recentTransactions.map(formatTransaction),
         nudges,

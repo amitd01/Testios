@@ -40,16 +40,36 @@ const RawEmail = {
   },
 
   async getStats(userId) {
-    const result = await db.query(
-      `SELECT
-         COUNT(*) as total,
-         COUNT(CASE WHEN parsing_status = 'success' THEN 1 END) as success,
-         COUNT(CASE WHEN parsing_status = 'failed' THEN 1 END) as failed,
-         COUNT(CASE WHEN parsing_status = 'pending' THEN 1 END) as pending
-       FROM raw_emails WHERE user_id = $1`,
-      [userId]
-    );
-    return result.rows[0];
+    const [statusResult, categoryResult, rawTxnResult] = await Promise.all([
+      db.query(
+        `SELECT
+           COUNT(*) as total,
+           COUNT(CASE WHEN parsing_status = 'success' THEN 1 END) as success,
+           COUNT(CASE WHEN parsing_status = 'failed' THEN 1 END) as failed,
+           COUNT(CASE WHEN parsing_status = 'pending' THEN 1 END) as pending
+         FROM raw_emails WHERE user_id = $1`,
+        [userId]
+      ),
+      db.query(
+        `SELECT email_category, COUNT(*) as count
+         FROM raw_emails WHERE user_id = $1 AND parsing_status = 'success'
+         GROUP BY email_category`,
+        [userId]
+      ),
+      db.query(
+        'SELECT COUNT(*) as count FROM raw_transactions WHERE user_id = $1',
+        [userId]
+      ),
+    ]);
+    const categories = {};
+    for (const row of categoryResult.rows) {
+      categories[row.email_category] = parseInt(row.count);
+    }
+    return {
+      ...statusResult.rows[0],
+      categories,
+      rawTransactions: parseInt(rawTxnResult.rows[0].count),
+    };
   },
 
   async updateObservability(emailId, data) {
