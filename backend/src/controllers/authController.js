@@ -1,6 +1,7 @@
+const jwt = require('jsonwebtoken');
 const GmailService = require('../services/gmailService');
 const User = require('../models/User');
-const { generateToken, verifyToken } = require('../middleware/auth');
+const { generateToken } = require('../middleware/auth');
 const config = require('../config');
 
 const authController = {
@@ -79,10 +80,11 @@ const authController = {
       const authHeader = req.headers.authorization;
       if (authHeader && authHeader.startsWith('Bearer ')) {
         try {
-          const decoded = verifyToken(authHeader.split(' ')[1]);
-          userId = decoded.userId;
+          // Use jwt.decode (no verification) so revoke works even with expired tokens
+          const decoded = jwt.decode(authHeader.split(' ')[1]);
+          userId = decoded?.userId;
         } catch (e) {
-          // Token invalid/expired — just clear client side
+          // Token completely malformed — just clear client side
         }
       }
 
