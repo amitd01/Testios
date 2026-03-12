@@ -10,6 +10,8 @@ const CATEGORY_RULES = {
     'haldiram', 'barbeque', 'subway', 'kfc', 'chai', 'bakery', 'hotel',
     'eat', 'dine', 'meal', 'lunch', 'dinner', 'breakfast',
     'taco bell', 'wendy', 'dunkin', 'baskin', 'panda express',
+    'freshmenu', 'box8', 'faasos', 'eatfit', 'behrouz', 'ovenstory',
+    'burger king', 'chicking', 'paradise', 'saravana',
   ],
   'Transportation': [
     'uber', 'ola', 'rapido', 'petrol', 'diesel', 'hp pump', 'indian oil',
@@ -28,6 +30,15 @@ const CATEGORY_RULES = {
     'croma', 'reliance digital', 'vijay sales', 'dmart', 'big bazaar',
     'lifestyle', 'shoppers stop', 'westside', 'pantaloons', 'mall',
     'online shopping', 'retail',
+    'nike', 'adidas', 'puma', 'zara', 'h&m', 'uniqlo', 'decathlon',
+    'lenskart', 'boat', 'noise', 'samsung', 'apple store', 'mi store',
+    'tata cliq', 'reliance trends',
+  ],
+  'Groceries': [
+    'bigbasket', 'blinkit', 'zepto', 'instamart', 'jiomart', 'grofers',
+    'nature basket', 'spencers', 'more supermarket', 'star bazaar',
+    'grocery', 'supermarket', 'kirana', 'vegetables', 'fruits',
+    'swiggy instamart', 'dunzo',
   ],
   'Entertainment': [
     'netflix', 'amazon prime', 'hotstar', 'disney', 'spotify', 'youtube',
@@ -66,7 +77,7 @@ const CATEGORY_RULES = {
     'own account',
   ],
   'Cash Withdrawal': [
-    'atm', 'cash withdrawal', 'self withdrawal',
+    'atm', 'cash withdrawal', 'self withdrawal', 'atm withdrawal',
   ],
   'Salary': [
     'salary', 'payroll', 'stipend', 'wages',

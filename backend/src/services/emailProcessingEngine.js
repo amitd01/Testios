@@ -22,6 +22,50 @@ const User = require('../models/User');
 const LLM_CONFIDENCE_THRESHOLD = 50;
 
 /**
+ * Sanitize LLM-extracted merchant names — reject garbage, clean up common issues.
+ * Returns cleaned name or 'Unknown' if the name is unusable.
+ */
+function sanitizeMerchant(name) {
+  if (!name || name === 'Unknown') return 'Unknown';
+  let m = name.trim();
+
+  // Reject if too long (sentence fragments, bank disclaimers)
+  if (m.length > 50) return 'Unknown';
+
+  // Reject bank boilerplate / legal text
+  const boilerplate = /discretion|group companies|terms and conditions|click here|know more|pay now|log in|sign in|manage alerts|do not share|otp|one time password|important notice|for details|customer care|toll free/i;
+  if (boilerplate.test(m)) return 'Unknown';
+
+  // Reject card/account descriptions used as merchants
+  const accountDesc = /(?:debit|credit)\s*card\s*(?:linked|ending|number)|(?:your\s+)?(?:a\/c|account)\s*(?:no|number|xx|linked)|using your|linked to account/i;
+  if (accountDesc.test(m)) return 'Unknown';
+
+  // Reject placeholder/masked values
+  if (/^x{2,}$/i.test(m)) return 'Unknown';
+  if (/^[a-z]\1{2,}$/i.test(m)) return 'Unknown'; // repeated chars like "Xxx"
+
+  // Clean ATM descriptions → just "ATM Withdrawal"
+  if (/\batm\b/i.test(m) && /(?:using|linked|card|account|withdraw)/i.test(m)) {
+    return 'ATM Withdrawal';
+  }
+
+  // Strip leading "POS " if present
+  m = m.replace(/^POS\s+/i, '');
+
+  // Strip company suffixes
+  m = m
+    .replace(/\s*\.?\s*(?:Pvt|Private|Pte|Ltd|Limited|LLP|Inc|Corp|Co)\b\.?/gi, ' ')
+    .replace(/\s*\.?\s*(?:India|Singapore|Payments?|Services?|Solutions?|Enterprises?|Technologies|Tech)\s*$/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Final length check
+  if (m.length < 2) return 'Unknown';
+
+  return m;
+}
+
+/**
  * Extract merchant name from email subject as a fallback
  * e.g. "Your Hdfc Bank Credit Card Ending 4141 Towards Amazonin" → "Amazon"
  */
@@ -454,6 +498,12 @@ class EmailProcessingEngine {
     // ============================================================
     // MERCHANT CLEANUP & FALLBACK EXTRACTION
     // ============================================================
+
+    // Sanitize LLM merchant output — reject garbage before fallback
+    if (parsed.merchant && parsed.merchant !== 'Unknown') {
+      parsed.merchant = sanitizeMerchant(parsed.merchant);
+    }
+
     // Fallback 1: Try regex extraction from email body text
     if (!parsed.merchant || parsed.merchant === 'Unknown') {
       const regexMerchant = extractMerchantFromText(bodyText);
@@ -465,9 +515,6 @@ class EmailProcessingEngine {
       const subjectMerchant = extractMerchantFromSubject(rawEmail.subject);
       if (subjectMerchant) parsed.merchant = subjectMerchant;
     }
-
-    // Note: credit card/debit card preamble stripping is already done in llmResponseValidator
-    // No need to duplicate it here
 
     // Title-case
     if (parsed.merchant && parsed.merchant !== 'Unknown') {

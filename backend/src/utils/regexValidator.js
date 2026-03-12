@@ -86,11 +86,20 @@ function extractMerchantFromText(text) {
     /Info:\s*UPI\/[^/]+\/[^/]+\/([a-zA-Z][a-zA-Z0-9._-]*?)(?:@|\s)/i,
     // "debited for <MERCHANT>" or "purchase at <MERCHANT>"
     /(?:debited\s+for|purchase\s+at)\s+([A-Za-z][A-Za-z0-9\s&.'/-]*?)\s+(?:on\s+\d)/i,
+    // ATM withdrawal patterns
+    /(?:ATM\s+(?:cash\s+)?withdraw(?:al|n)?|withdraw(?:al|n)?\s+(?:at|from)\s+ATM)/i,
+    // "debited by <MERCHANT>" or "debited to <MERCHANT>"
+    /debited\s+(?:by|to)\s+([A-Za-z][A-Za-z0-9\s&.'/-]*?)\s+(?:on\s+\d|for\s+|via\s+|Ref)/i,
+    // "credited by <MERCHANT>" broader
+    /credited\s+(?:by|from)\s+([A-Za-z][A-Za-z0-9\s&.'/-]*?)(?:\s+on\s+\d|\s+Ref|\s+UPI|\.\s|$)/i,
   ];
 
   for (const pattern of patterns) {
     const match = text.match(pattern);
     if (match) {
+      // ATM pattern has no capture group — return fixed value
+      if (!match[1] && /atm/i.test(match[0])) return 'ATM Withdrawal';
+      if (!match[1]) continue;
       let merchant = match[1].trim();
 
       // For UPI VPA, clean up: "swiggy" → "Swiggy"
