@@ -11,12 +11,13 @@ Pay before due date to avoid late fee.`;
     const result = parseBillReminder(body, sender, subject);
 
     expect(result).not.toBeNull();
-    expect(result.biller_name).toBe('BESCOM');
-    expect(result.bill_type).toBe('electricity');
-    expect(result.due_date).toBe('2026-03-25');
-    expect(result.amount).toBe(1450.00);
-    expect(result.account_number).toBe('123456789');
-    expect(result.recurrence).toBe('monthly');
+    expect(result.data).not.toBeNull();
+    expect(result.data.biller_name).toBe('BESCOM');
+    expect(result.data.bill_type).toBe('electricity');
+    expect(result.data.due_date).toBe('2026-03-25');
+    expect(result.data.amount).toBe(1450.00);
+    expect(result.data.account_number).toBe('123456789');
+    expect(result.data.recurrence).toBe('monthly');
   });
 
   test('parses Airtel mobile bill', () => {
@@ -28,10 +29,11 @@ Due date: 20/03/2026. Pay now to avoid disconnection.`;
     const result = parseBillReminder(body, sender, subject);
 
     expect(result).not.toBeNull();
-    expect(result.biller_name).toBe('Airtel');
-    expect(result.bill_type).toBe('mobile');
-    expect(result.amount).toBe(599.00);
-    expect(result.due_date).toBe('2026-03-20');
+    expect(result.data).not.toBeNull();
+    expect(result.data.biller_name).toBe('Airtel');
+    expect(result.data.bill_type).toBe('mobile');
+    expect(result.data.amount).toBe(599.00);
+    expect(result.data.due_date).toBe('2026-03-20');
   });
 
   test('parses Netflix subscription reminder', () => {
@@ -42,9 +44,10 @@ Due date: 20/03/2026. Pay now to avoid disconnection.`;
     const result = parseBillReminder(body, sender, subject);
 
     expect(result).not.toBeNull();
-    expect(result.biller_name).toBe('Netflix');
-    expect(result.bill_type).toBe('subscription');
-    expect(result.amount).toBe(649.00);
+    expect(result.data).not.toBeNull();
+    expect(result.data.biller_name).toBe('Netflix');
+    expect(result.data.bill_type).toBe('subscription');
+    expect(result.data.amount).toBe(649.00);
   });
 
   test('parses insurance premium reminder', () => {
@@ -55,14 +58,15 @@ Due date: 20/03/2026. Pay now to avoid disconnection.`;
     const result = parseBillReminder(body, sender, subject);
 
     expect(result).not.toBeNull();
-    expect(result.biller_name).toBe('LIC');
-    expect(result.bill_type).toBe('insurance');
-    expect(result.amount).toBe(12500.00);
-    expect(result.recurrence).toBe('yearly');
+    expect(result.data).not.toBeNull();
+    expect(result.data.biller_name).toBe('LIC');
+    expect(result.data.bill_type).toBe('insurance');
+    expect(result.data.amount).toBe(12500.00);
+    expect(result.data.recurrence).toBe('yearly');
   });
 
   test('returns null for unparseable email', () => {
     const result = parseBillReminder('General newsletter content', 'news@random.com', 'Newsletter');
-    expect(result).toBeNull();
+    expect(result.data).toBeNull();
   });
 });

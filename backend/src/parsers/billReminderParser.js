@@ -15,7 +15,7 @@ function parseBillReminder(emailBody, sender, subject, senderInfo = null) {
     : '';
   const combined = (subject || '') + ' ' + text;
 
-  const billerName = senderInfo?.name || extractBillerName(combined);
+  const billerName = senderInfo?.name || extractBillerName(combined) || extractBillerName(sender || '');
   const billType = detectBillType(combined, senderInfo);
   const amount = extractBillAmount(combined);
   const dueDate = extractDueDate(combined);

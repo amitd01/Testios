@@ -13,13 +13,14 @@ Available Balance: Rs 45,230.50`;
       const result = parseTransactionAlert(body, sender, subject);
 
       expect(result).not.toBeNull();
-      expect(result.amount).toBe(-520.00);
-      expect(result.date).toBe('2026-03-17');
-      expect(result.account_last4).toBe('1234');
-      expect(result.transaction_type).toBe('debit');
-      expect(result.balance_after).toBe(45230.50);
-      expect(result.payment_method).toBe('UPI');
-      expect(result.source).toBe('email_alert');
+      expect(result.data).not.toBeNull();
+      expect(result.data.amount).toBe(-520.00);
+      expect(result.data.date).toBe('2026-03-17');
+      expect(result.data.account_last4).toBe('1234');
+      expect(result.data.transaction_type).toBe('debit');
+      expect(result.data.balance_after).toBe(45230.50);
+      expect(result.data.payment_method).toBe('UPI');
+      expect(result.data.source).toBe('email_alert');
     });
 
     test('parses ICICI Bank credit alert', () => {
@@ -30,10 +31,11 @@ Available Balance: Rs 45,230.50`;
       const result = parseTransactionAlert(body, sender, subject);
 
       expect(result).not.toBeNull();
-      expect(result.amount).toBe(25000.00);
-      expect(result.account_last4).toBe('5678');
-      expect(result.transaction_type).toBe('credit');
-      expect(result.payment_method).toBe('NEFT');
+      expect(result.data).not.toBeNull();
+      expect(result.data.amount).toBe(25000.00);
+      expect(result.data.account_last4).toBe('5678');
+      expect(result.data.transaction_type).toBe('credit');
+      expect(result.data.payment_method).toBe('NEFT');
     });
 
     test('parses SBI UPI debit alert', () => {
@@ -43,10 +45,11 @@ Available Balance: Rs 45,230.50`;
       const result = parseTransactionAlert(body, sender, 'SBI Debit Alert');
 
       expect(result).not.toBeNull();
-      expect(result.amount).toBe(-150.00);
-      expect(result.account_last4).toBe('9876');
-      expect(result.transaction_type).toBe('debit');
-      expect(result.payment_method).toBe('UPI');
+      expect(result.data).not.toBeNull();
+      expect(result.data.amount).toBe(-150.00);
+      expect(result.data.account_last4).toBe('9876');
+      expect(result.data.transaction_type).toBe('debit');
+      expect(result.data.payment_method).toBe('UPI');
     });
 
     test('parses Axis Bank IMPS alert', () => {
@@ -56,9 +59,10 @@ Available Balance: Rs 45,230.50`;
       const result = parseTransactionAlert(body, sender, 'Transaction Alert');
 
       expect(result).not.toBeNull();
-      expect(result.amount).toBe(-3500.00);
-      expect(result.account_last4).toBe('4321');
-      expect(result.payment_method).toBe('IMPS');
+      expect(result.data).not.toBeNull();
+      expect(result.data.amount).toBe(-3500.00);
+      expect(result.data.account_last4).toBe('4321');
+      expect(result.data.payment_method).toBe('IMPS');
     });
 
     test('parses credit card swipe alert', () => {
@@ -68,15 +72,16 @@ Available Balance: Rs 45,230.50`;
       const result = parseTransactionAlert(body, sender, 'Credit Card Alert');
 
       expect(result).not.toBeNull();
-      expect(result.amount).toBe(-1299.00);
-      expect(result.account_last4).toBe('4567');
-      expect(result.account_type).toBe('credit_card');
-      expect(result.transaction_type).toBe('debit');
+      expect(result.data).not.toBeNull();
+      expect(result.data.amount).toBe(-1299.00);
+      expect(result.data.account_last4).toBe('4567');
+      expect(result.data.account_type).toBe('credit_card');
+      expect(result.data.transaction_type).toBe('debit');
     });
 
-    test('returns null for unparseable email', () => {
+    test('returns null data for unparseable email', () => {
       const result = parseTransactionAlert('Welcome to our newsletter!', 'news@example.com', 'Newsletter');
-      expect(result).toBeNull();
+      expect(result.data).toBeNull();
     });
   });
 

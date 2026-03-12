@@ -9,7 +9,8 @@ beforeEach(() => {
   resetDbMocks();
 });
 
-// Helper: set up all 9 mock responses the dashboard controller needs (auth + 9 queries)
+// Helper: set up all mock responses the dashboard controller needs
+// Auth (1) + 8 model queries, but RawEmail.getStats makes 3 internal queries = 12 total
 function setupDashboardMocks({ netWorth, cashFlow, lastMonthCashFlow, spending, goals, investments, upcomingBills, emailStats, recentTxns } = {}) {
   // 1. Auth middleware: User.findById
   mockQueryRows([TEST_USER]);
@@ -28,8 +29,10 @@ function setupDashboardMocks({ netWorth, cashFlow, lastMonthCashFlow, spending, 
   mockQueryResponse({ rows: investments || [] });
   // 8. Bill.getByUser
   mockQueryResponse({ rows: upcomingBills || [] });
-  // 9. RawEmail.getStats
+  // 9. RawEmail.getStats — makes 3 parallel queries (statusResult, categoryResult, rawTxnResult)
   mockQueryResponse({ rows: [emailStats || { total: '100', success: '85', failed: '10', pending: '5' }] });
+  mockQueryResponse({ rows: [] }); // categoryResult (email_category counts)
+  mockQueryResponse({ rows: [{ count: '0' }] }); // rawTxnResult (raw_transactions count)
   // 10. Transaction.getByUser (recent)
   mockQueryResponse({ rows: recentTxns || [TEST_TRANSACTION] });
 }
