@@ -42,5 +42,20 @@
       "https://pm2dev.substack.com/p/pm-to-rust-dev-episode-0002-what",
       "https://paulgraham.com/brandage.html"
     ]
+  },
+  "2026-03-12": {
+    "message_ids": [
+      "19cdfb5b0cdb16ba",
+      "19cdd36be098cecf",
+      "19cdd33f3f72cb50",
+      "19cdd2f838e1b22f",
+      "19cdc7c718f3f411"
+    ],
+    "article_urls": [
+      "https://navalsarchive.substack.com/p/the-word-that-forgot-its-own-name",
+      "https://www.a16z.news/p/the-world-needs-an-ai-lab-for-data",
+      "https://thedailybrief.zerodha.com/p/the-iran-war-and-indias-fertilizer",
+      "https://pm2dev.substack.com/p/pm-to-rust-dev-episode-0003-rtfm"
+    ]
   }
 }
