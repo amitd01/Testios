@@ -44,8 +44,8 @@ async function isWhitelistedSender(senderEmail) {
 
   if (domainCache.has(domain)) return true;
 
-  for (const [whitelistedDomain, info] of domainCache.entries()) {
-    if (info.subdomains_allowed && domain.endsWith('.' + whitelistedDomain)) return true;
+  for (const [whitelistedDomain] of domainCache.entries()) {
+    if (domain.endsWith('.' + whitelistedDomain)) return true;
   }
 
   return false;
@@ -59,7 +59,7 @@ async function getSenderInfo(senderEmail) {
   if (domainCache.has(domain)) return domainCache.get(domain);
 
   for (const [whitelistedDomain, info] of domainCache.entries()) {
-    if (info.subdomains_allowed && domain.endsWith('.' + whitelistedDomain)) return info;
+    if (domain.endsWith('.' + whitelistedDomain)) return info;
   }
 
   return null;

@@ -211,6 +211,7 @@ class EmailProcessingEngine {
         await recordPendingSender(domain, parsed.sender, parsed.subject);
         this.logger.info('Potential new financial sender detected', { domain, subject: parsed.subject });
       }
+      this.logger.debug('Skipped email: sender not whitelisted', { sender: parsed.sender, domain, subject: parsed.subject });
       this.stats.skipped++;
       return;
     }
