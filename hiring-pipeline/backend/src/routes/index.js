@@ -6,6 +6,7 @@ const consultantCtrl = require('../controllers/consultantController');
 const requisitionCtrl = require('../controllers/requisitionController');
 const cvCtrl = require('../controllers/cvController');
 const briefingCtrl = require('../controllers/briefingController');
+const interviewCtrl = require('../controllers/interviewController');
 
 // --- Role Families ---
 router.get('/role-families', auth, consultantCtrl.listRoleFamilies);
@@ -43,5 +44,20 @@ router.get('/briefings/:id', auth, briefingCtrl.getById);
 router.get('/briefings/by-token/:token', briefingCtrl.getByToken);
 router.post('/briefings/:token/chat', briefingCtrl.chat);
 router.post('/briefings/:token/complete', briefingCtrl.complete);
+
+// --- Interview Slots (auth required) ---
+router.post('/interview-slots', auth, interviewCtrl.createSlot);
+router.post('/interview-slots/bulk', auth, interviewCtrl.createSlotsBulk);
+router.get('/interview-slots', auth, interviewCtrl.listSlots);
+
+// --- Interview Bookings (auth required) ---
+router.get('/interviews', auth, interviewCtrl.listBookings);
+router.patch('/interviews/:id/cancel', auth, interviewCtrl.cancelBooking);
+router.patch('/interviews/:id/complete', auth, interviewCtrl.completeBooking);
+router.post('/interviews/create-link', auth, interviewCtrl.createSchedulingLink);
+
+// --- Interview Scheduling (public - candidate access via token) ---
+router.get('/interviews/schedule/:token', interviewCtrl.getScheduleByToken);
+router.post('/interviews/schedule/:token/book', interviewCtrl.bookSlot);
 
 module.exports = router;

@@ -11,10 +11,15 @@ function RequisitionDetail() {
   const [suggestions, setSuggestions] = useState([]);
   const [showSubmitForm, setShowSubmitForm] = useState(false);
   const [cvForm, setCvForm] = useState({ candidate_name: '', candidate_email: '', consultant_id: '', consultant_rationale: '' });
+  const [slots, setSlots] = useState([]);
+  const [showSlotForm, setShowSlotForm] = useState(false);
+  const [slotForm, setSlotForm] = useState({ interviewer_name: '', interviewer_email: '', date: '', start_time: '10:00', end_time: '11:00' });
+  const [schedulingLinks, setSchedulingLinks] = useState({});
 
   const load = useCallback(() => {
     api.get(`/requisitions/${id}`).then(r => setReq(r.data)).catch(() => {});
     api.get(`/cv-submissions?requisition_id=${id}`).then(r => setSubmissions(r.data)).catch(() => {});
+    api.get(`/interview-slots?requisition_id=${id}`).then(r => setSlots(r.data)).catch(() => {});
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
@@ -60,6 +65,37 @@ function RequisitionDetail() {
       load();
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to reject');
+    }
+  };
+
+  const handleAddSlot = async (e) => {
+    e.preventDefault();
+    try {
+      const start = new Date(`${slotForm.date}T${slotForm.start_time}`);
+      const end = new Date(`${slotForm.date}T${slotForm.end_time}`);
+      await api.post('/interview-slots', {
+        requisition_id: parseInt(id),
+        interviewer_name: slotForm.interviewer_name || req.hiring_manager_name,
+        interviewer_email: slotForm.interviewer_email || req.hiring_manager_email,
+        start_time: start.toISOString(),
+        end_time: end.toISOString(),
+      });
+      setSlotForm({ interviewer_name: '', interviewer_email: '', date: '', start_time: '10:00', end_time: '11:00' });
+      setShowSlotForm(false);
+      load();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to add slot');
+    }
+  };
+
+  const handleCreateSchedulingLink = async (subId) => {
+    try {
+      const res = await api.post('/interviews/create-link', { cv_submission_id: subId });
+      setSchedulingLinks(prev => ({ ...prev, [subId]: res.data.scheduling_url }));
+      const url = `${window.location.origin}${res.data.scheduling_url}`;
+      alert(`Scheduling link created! Share with candidate:\n${url}`);
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to create scheduling link');
     }
   };
 
@@ -187,6 +223,99 @@ function RequisitionDetail() {
             <div key={s.id} className="flex-between" style={{ padding: '8px 0', borderBottom: '1px solid #eee' }}>
               <span>{s.candidate_name}</span>
               <button className="btn btn-primary btn-sm" onClick={() => handleCreateBriefing(s.id)}>Create Briefing</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="card">
+        <div className="flex-between mb-4">
+          <h3>Interview Scheduling</h3>
+          <button className="btn btn-primary btn-sm" onClick={() => setShowSlotForm(!showSlotForm)}>
+            {showSlotForm ? 'Cancel' : 'Add Slots'}
+          </button>
+        </div>
+
+        {showSlotForm && (
+          <form onSubmit={handleAddSlot} style={{ marginBottom: 16, padding: 16, background: '#f8f9fa', borderRadius: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div className="form-group">
+                <label>Interviewer Name</label>
+                <input
+                  value={slotForm.interviewer_name}
+                  onChange={e => setSlotForm({ ...slotForm, interviewer_name: e.target.value })}
+                  placeholder={req.hiring_manager_name || 'Interviewer name'}
+                />
+              </div>
+              <div className="form-group">
+                <label>Interviewer Email</label>
+                <input
+                  type="email"
+                  value={slotForm.interviewer_email}
+                  onChange={e => setSlotForm({ ...slotForm, interviewer_email: e.target.value })}
+                  placeholder={req.hiring_manager_email || 'email@company.com'}
+                />
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+              <div className="form-group">
+                <label>Date *</label>
+                <input type="date" value={slotForm.date} onChange={e => setSlotForm({ ...slotForm, date: e.target.value })} required />
+              </div>
+              <div className="form-group">
+                <label>Start Time *</label>
+                <input type="time" value={slotForm.start_time} onChange={e => setSlotForm({ ...slotForm, start_time: e.target.value })} required />
+              </div>
+              <div className="form-group">
+                <label>End Time *</label>
+                <input type="time" value={slotForm.end_time} onChange={e => setSlotForm({ ...slotForm, end_time: e.target.value })} required />
+              </div>
+            </div>
+            <button type="submit" className="btn btn-success btn-sm">Add Slot</button>
+          </form>
+        )}
+
+        {slots.length > 0 ? (
+          <table>
+            <thead>
+              <tr><th>Date</th><th>Time</th><th>Interviewer</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              {slots.map(s => (
+                <tr key={s.id}>
+                  <td>{new Date(s.start_time).toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })}</td>
+                  <td>{new Date(s.start_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} &ndash; {new Date(s.end_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</td>
+                  <td>{s.interviewer_name}</td>
+                  <td>
+                    {s.is_booked ? (
+                      <span className="badge badge-hired">{s.candidate_name || 'Booked'}</span>
+                    ) : (
+                      <span className="badge badge-submitted">Available</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p style={{ color: '#636e72', fontSize: 13 }}>No interview slots created yet. Add slots so candidates can self-schedule.</p>
+        )}
+      </div>
+
+      {submissions.filter(s => s.briefing_status === 'completed' && s.status === 'sent_to_manager').length > 0 && (
+        <div className="card">
+          <h3 className="mb-4">Send Scheduling Links</h3>
+          <p style={{ fontSize: 13, color: '#636e72', marginBottom: 12 }}>
+            These candidates passed their briefing. Send them a link to self-schedule an interview.
+          </p>
+          {submissions.filter(s => s.briefing_status === 'completed' && s.status === 'sent_to_manager').map(s => (
+            <div key={s.id} className="flex-between" style={{ padding: '8px 0', borderBottom: '1px solid #eee' }}>
+              <span>{s.candidate_name} <span className="badge badge-completed">Briefing Passed</span></span>
+              {schedulingLinks[s.id] ? (
+                <span style={{ fontSize: 12, color: '#636e72' }}>{window.location.origin}{schedulingLinks[s.id]}</span>
+              ) : (
+                <button className="btn btn-primary btn-sm" onClick={() => handleCreateSchedulingLink(s.id)}>Create Scheduling Link</button>
+              )}
             </div>
           ))}
         </div>

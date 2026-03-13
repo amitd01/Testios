@@ -313,31 +313,94 @@ async function simulate() {
     }
 
     // ================================================================
-    // STEP 9: Manager schedules interviews for 2, passes on 1
+    // STEP 9: Create interview slots and scheduling links
     // ================================================================
-    step(9, 'MANAGER REVIEW — Nandita reviews 3 CVs, interviews 2');
+    step(9, 'INTERVIEW SCHEDULING — Manager creates slots, candidates book');
+
+    // Manager creates interview slots for the requisition
+    const slotDates = [];
+    const baseDate = new Date();
+    for (let i = 1; i <= 5; i++) {
+      const d = new Date(baseDate);
+      d.setDate(d.getDate() + i + 2); // slots a few days out
+      if (d.getDay() === 0) d.setDate(d.getDate() + 1); // skip Sunday
+      if (d.getDay() === 6) d.setDate(d.getDate() + 2); // skip Saturday
+      slotDates.push(d);
+    }
+
+    const createdSlots = [];
+    for (const d of slotDates) {
+      const startTime = new Date(d);
+      startTime.setHours(10, 0, 0, 0);
+      const endTime = new Date(d);
+      endTime.setHours(11, 0, 0, 0);
+
+      const { rows: [slot] } = await client.query(
+        `INSERT INTO interview_slots (requisition_id, interviewer_name, interviewer_email, start_time, end_time, duration_minutes)
+         VALUES ($1, $2, $3, $4, $5, 60) RETURNING *`,
+        [requisition.id, 'Nandita Krishnan', 'nandita.k@company.in', startTime.toISOString(), endTime.toISOString()]
+      );
+      createdSlots.push(slot);
+    }
+    log(`\n  Created ${createdSlots.length} interview slots for ${requisition.hiring_manager_name}`);
+    for (const s of createdSlots) {
+      log(`    ${new Date(s.start_time).toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })} ${new Date(s.start_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} - ${new Date(s.end_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`);
+    }
+
+    // Create scheduling links for the 3 passed candidates (Rohit, Sneha, Fatima)
+    const schedulingTokens = {};
+    for (const cv of passedCVs) {
+      const { rows: [booking] } = await client.query(
+        `INSERT INTO interview_bookings (cv_submission_id, candidate_id, status)
+         VALUES ($1, $2, 'confirmed') RETURNING *`,
+        [cv.id, cv.candidate_id]
+      );
+      schedulingTokens[cv.candidate_name] = booking.scheduling_token;
+      log(`\n  Scheduling link for ${cv.candidate_name}: /interview/${booking.scheduling_token}`);
+    }
+
+    // ================================================================
+    // STEP 10: Manager reviews, 2 candidates book interviews
+    // ================================================================
+    step(10, 'MANAGER REVIEW + BOOKING — Nandita reviews 3 CVs, 2 book interviews');
 
     // Sneha doesn't get interview (manager feels IoT background is too different)
     await client.query(
       "UPDATE cv_submissions SET status = 'rejected', rejection_reason = $2, resolved_at = NOW() WHERE id = $1",
       [shortlisted[1].id, 'Manager feedback: IoT sales background is too far from ERP/SaaS integration sales. Prefers candidates with direct ERP ecosystem experience.']
     );
+    // Cancel Sneha's scheduling link
+    await client.query(
+      "UPDATE interview_bookings SET status = 'cancelled', cancelled_at = NOW() WHERE cv_submission_id = $1",
+      [shortlisted[1].id]
+    );
     log(`\n  REJECTED by manager: ${shortlisted[1].candidate_name} — IoT background too different`);
 
-    // Rohit and Fatima get interviews
+    // Rohit and Fatima book interviews
     const interviewCVs = [shortlisted[0], shortlisted[3]];
-    for (const cv of interviewCVs) {
+    for (let i = 0; i < interviewCVs.length; i++) {
+      const cv = interviewCVs[i];
+      const slot = createdSlots[i];
+
+      // Book the slot
+      await client.query('UPDATE interview_slots SET is_booked = true WHERE id = $1', [slot.id]);
+      await client.query(
+        'UPDATE interview_bookings SET slot_id = $2, booked_at = NOW() WHERE cv_submission_id = $1 AND status != $3',
+        [cv.id, slot.id, 'cancelled']
+      );
+
+      // Advance CV to interview_scheduled
       await client.query(
         "UPDATE cv_submissions SET status = 'interview_scheduled', interview_scheduled_at = NOW() WHERE id = $1",
         [cv.id]
       );
-      log(`  INTERVIEW SCHEDULED: ${cv.candidate_name}`);
+      log(`  INTERVIEW BOOKED: ${cv.candidate_name} — ${new Date(slot.start_time).toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })} ${new Date(slot.start_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`);
     }
 
     // ================================================================
-    // STEP 10: Final outcome — Fatima gets hired
+    // STEP 11: Final outcome — Fatima gets hired
     // ================================================================
-    step(10, 'FINAL OUTCOME — Fatima Sheikh gets the offer');
+    step(11, 'FINAL OUTCOME — Fatima Sheikh gets the offer');
 
     // Rohit - good interview but declines (counter-offer from Siemens)
     await client.query(
@@ -375,8 +438,16 @@ async function simulate() {
       );
     }
 
+    // Mark interviews as completed for the booked candidates
+    for (const cv of interviewCVs) {
+      await client.query(
+        "UPDATE interview_bookings SET status = 'completed' WHERE cv_submission_id = $1 AND status != 'cancelled'",
+        [cv.id]
+      );
+    }
+
     // ================================================================
-    // STEP 11: Pipeline summary
+    // STEP 12: Pipeline summary
     // ================================================================
     header('PIPELINE SUMMARY');
 
@@ -401,9 +472,9 @@ async function simulate() {
     log(`  Conversion rate: 20% (1/5 submitted → hired)`);
 
     // ================================================================
-    // STEP 12: Verify updated rankings
+    // STEP 13: Verify updated rankings
     // ================================================================
-    step(12, 'VERIFY RANKINGS — Check if new outcomes affected consultant rankings');
+    step(13, 'VERIFY RANKINGS — Check if new outcomes affected consultant rankings');
 
     const updatedRankings = await YieldCalculator.getRankingsForRoleFamily(salesFamily.id);
 
@@ -415,7 +486,7 @@ async function simulate() {
     }
 
     // ================================================================
-    // STEP 13: Dashboard view
+    // STEP 14: Dashboard view
     // ================================================================
     header('DASHBOARD METRICS');
 
@@ -444,7 +515,7 @@ async function simulate() {
 `);
 
     // ================================================================
-    // STEP 14: Briefing gate enforcement demo
+    // STEP 15: Briefing gate enforcement demo
     // ================================================================
     section('BRIEFING GATE ENFORCEMENT TEST');
 
@@ -475,10 +546,11 @@ async function simulate() {
     await client.query('DELETE FROM candidates WHERE id = $1', [testCandidate.id]);
 
     header('SIMULATION COMPLETE');
-    log('\n  All 3 subsystems exercised:');
+    log('\n  All 4 subsystems exercised:');
     log('    1. Consultant Ranking: Yield-based rankings queried and used for auto-assignment');
     log('    2. CV Pipeline: Full 6-stage lifecycle (submitted → hired) with screening and rejection');
     log('    3. Briefing Gate: Conversations simulated, pass/fail evaluated, gate enforcement verified');
+    log('    4. Interview Scheduling: Slots created, scheduling links generated, candidates self-booked');
     log('\n  The hiring pipeline is operational. 🚀\n');
 
   } catch (err) {

@@ -6,13 +6,15 @@ import Consultants from './pages/Consultants';
 import Requisitions from './pages/Requisitions';
 import RequisitionDetail from './pages/RequisitionDetail';
 import BriefingChat from './pages/BriefingChat';
+import InterviewBooking from './pages/InterviewBooking';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public route - no layout/auth */}
+        {/* Public routes - no layout/auth */}
         <Route path="/briefing/:token" element={<BriefingChat />} />
+        <Route path="/interview/:token" element={<InterviewBooking />} />
 
         {/* Authenticated routes */}
         <Route element={<Layout />}>
