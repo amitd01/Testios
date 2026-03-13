@@ -95,7 +95,7 @@ def main(dry_run: bool = False) -> None:
     ]
     email_newsletters: list = []
     for nl in raw_email_newsletters:
-        if _is_compilation(nl, compilation_senders):
+        if _is_compilation(nl, compilation_senders, min_links=settings.compilation_min_links):
             email_newsletters.extend(expand_compilation(nl, used_urls))
         else:
             email_newsletters.append(nl)
@@ -182,19 +182,18 @@ def main(dry_run: bool = False) -> None:
     log.info("=== Newsletter Agent run complete ===")
 
 
-def _is_compilation(nl, compilation_senders: list[str]) -> bool:
+def _is_compilation(nl, compilation_senders: list[str], min_links: int = 2) -> bool:
     """Return True if a newsletter should be expanded into individual articles.
 
     A newsletter is treated as a compilation if:
     1. Its sender matches a known compilation sender address/domain, OR
-    2. It has the maximum number of extracted links (≥6), suggesting it is
-       a dense link-aggregator rather than a single-article email.
+    2. It has at least `min_links` extracted article links (default: 2), meaning
+       it is a digest/aggregator with multiple distinct articles embedded.
     """
     sender_lower = nl.sender.lower()
     if any(s in sender_lower for s in compilation_senders if s):
         return True
-    # hit the extract_article_links cap → dense with links
-    if len(nl.links) >= 6:
+    if len(nl.links) >= min_links:
         return True
     return False
 

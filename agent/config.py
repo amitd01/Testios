@@ -63,6 +63,20 @@ class Settings(BaseSettings):
         description="Gmail label whose emails' links are treated as whitelisted articles",
     )
 
+    # ── Ranking / output ────────────────────────────────────────────────────────
+    max_articles: int = Field(
+        8,
+        description="Maximum number of articles to include in each digest",
+    )
+    min_score_threshold: float = Field(
+        6.5,
+        description="Minimum average score (0–10) an article must reach to be included",
+    )
+    compilation_min_links: int = Field(
+        2,
+        description="Emails with this many article links or more are expanded per-link",
+    )
+
     # ── Filtering ──────────────────────────────────────────────────────────────
     blocklist_senders: str = Field(
         "",

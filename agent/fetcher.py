@@ -114,6 +114,30 @@ def _should_skip(url: str) -> bool:
     return any(host == d or host.endswith("." + d) for d in _SKIP_DOMAINS)
 
 
+def _ssl_context():
+    """Return an SSL context that trusts system certs (certifi if available)."""
+    import ssl
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except ImportError:
+        return ssl.create_default_context()
+
+
+def resolve_url(url: str, timeout: int = 5) -> str:
+    """Follow HTTP redirects and return the final URL (e.g. t.co → real URL).
+
+    Used to resolve Twitter/X shortlinks before dedup and before passing to Claude.
+    Returns the original URL on any failure.
+    """
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
+        with urllib.request.urlopen(req, timeout=timeout, context=_ssl_context()) as resp:
+            return resp.url  # final URL after all redirects
+    except Exception:
+        return url
+
+
 def fetch_article(url: str) -> tuple[str, str]:
     """Download and parse an article URL.
 
@@ -129,7 +153,7 @@ def fetch_article(url: str) -> tuple[str, str]:
 
     try:
         req = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
-        with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT) as resp:
+        with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT, context=_ssl_context()) as resp:
             content_type = resp.headers.get("Content-Type", "")
             if "html" not in content_type.lower():
                 log.debug("fetch_article: non-HTML content-type for %s", url)

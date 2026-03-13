@@ -6,6 +6,9 @@ import csv
 import logging
 from pathlib import Path
 
+from urllib.parse import urlparse
+
+from ..fetcher import resolve_url
 from ..models import Newsletter
 
 log = logging.getLogger(__name__)
@@ -56,8 +59,19 @@ def load_x_data(
 
                 if embedded.strip():
                     links = [l.strip() for l in embedded.split(",") if l.strip()]
+                    # Resolve t.co shortlinks to real URLs for proper dedup and
+                    # so Claude can see the actual article domain/title.
+                    resolved = []
+                    for l in links:
+                        domain = urlparse(l).netloc.lstrip("www.")
+                        if "t.co" in domain:
+                            real = resolve_url(l)
+                            log.debug("Resolved t.co %s → %s", l, real)
+                            resolved.append(real)
+                        else:
+                            resolved.append(l)
                     # Filter out links already used in past digests
-                    new_links = [l for l in links if l not in used_urls]
+                    new_links = [l for l in resolved if l not in used_urls]
                     if not new_links:
                         log.debug(
                             "All links from tweet %s already used — skipping.",

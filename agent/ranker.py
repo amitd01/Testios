@@ -37,7 +37,7 @@ def _build_system_prompt(max_words: int) -> str:
     )
 
 
-def _build_user_template(max_words: int) -> str:
+def _build_user_template(max_words: int, max_articles: int = 8, min_score: float = 6.5) -> str:
     min_words = max_words - 50
     return (
         "Analyse these {n} item(s) from the last 24 hours.\n"
@@ -58,6 +58,8 @@ def _build_user_template(max_words: int) -> str:
         "  fall back to the newsletter's web-view URL.\n"
         "- In the 'source' field, preserve whether it came from a newsletter or X bookmark/like.\n"
         "- Rank 1 = best overall.\n"
+        f"- Only include articles whose average score is ≥ {min_score}. Exclude anything below this threshold.\n"
+        f"- Return at most {max_articles} ranked articles.\n"
         "\n"
         "Scoring rubric (0–10 each):\n"
         "  - originality: Novel angle or non-obvious insight — not just restating existing coverage\n"
@@ -196,8 +198,10 @@ def summarise_and_rank(
 
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     max_words = settings.summary_max_words
+    max_articles = settings.max_articles
+    min_score = settings.min_score_threshold
     system_prompt = _build_system_prompt(max_words)
-    user_template = _build_user_template(max_words)
+    user_template = _build_user_template(max_words, max_articles=max_articles, min_score=min_score)
     max_tokens = max(4096, max_words * 30)
 
     blocks: list[str] = []
@@ -253,6 +257,16 @@ def summarise_and_rank(
     if excluded:
         for item in excluded:
             log.info("Excluded by Claude: '%s' — %s", item.subject, item.reason)
+
+    # Python-side safety filters: enforce score threshold and article cap.
+    before = len(articles)
+    articles = [a for a in articles if a.score >= min_score]
+    articles = articles[:max_articles]
+    if len(articles) < before:
+        log.info(
+            "Post-filter: %d → %d article(s) (threshold=%.1f, cap=%d).",
+            before, len(articles), min_score, max_articles,
+        )
 
     log.info("Claude ranked %d article(s), excluded %d.", len(articles), len(excluded))
     return articles, excluded, teaser, quote, quote_attribution
