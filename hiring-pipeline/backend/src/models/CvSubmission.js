@@ -122,6 +122,14 @@ class CvSubmission {
     return rows;
   }
 
+  static async updateScore(id, { fit_score, fit_analysis }) {
+    const { rows } = await pool.query(
+      `UPDATE cv_submissions SET fit_score = $2, fit_analysis = $3, scored_at = NOW() WHERE id = $1 RETURNING *`,
+      [id, fit_score, JSON.stringify(fit_analysis)]
+    );
+    return rows[0];
+  }
+
   static async getAging(thresholdDays = 3) {
     const { rows } = await pool.query(`
       SELECT cv.*, c.name as candidate_name, con.firm_name as consultant_firm,

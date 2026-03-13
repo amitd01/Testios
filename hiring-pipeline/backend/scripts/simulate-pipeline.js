@@ -13,6 +13,7 @@ require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 const pool = require('../src/config/database');
 const YieldCalculator = require('../src/services/yieldCalculator');
 const Briefing = require('../src/models/Briefing');
+const TriageService = require('../src/services/triageService');
 
 const DIVIDER = '='.repeat(70);
 const SECTION = '-'.repeat(50);
@@ -156,6 +157,26 @@ async function simulate() {
       log(`\n  CV #${cvSubmissions.length}: ${cand.name}`);
       log(`    Submitted by: ${consultant.firm_name} (Rank #${consultant.computed_rank})`);
       log(`    Rationale: ${cand.rationale.substring(0, 100)}...`);
+    }
+
+    // ================================================================
+    // STEP 4b: CV TRIAGE — Auto-score all submissions
+    // ================================================================
+    log('\n  STEP 4b: CV TRIAGE — Auto-scoring candidates against job description\n');
+
+    for (const cv of cvSubmissions) {
+      const scoreResult = TriageService.scoreMock(
+        { consultant_rationale: cv.rationale, candidate_name: cv.candidate_name },
+        requisition
+      );
+      await client.query(
+        'UPDATE cv_submissions SET fit_score = $2, fit_analysis = $3, scored_at = NOW() WHERE id = $1',
+        [cv.id, scoreResult.fit_score, JSON.stringify({ dimensions: scoreResult.dimensions, summary: scoreResult.summary, method: scoreResult.method })]
+      );
+      cv.fit_score = scoreResult.fit_score;
+      const dims = scoreResult.dimensions;
+      log(`  ${cv.candidate_name.padEnd(20)} Score: ${String(scoreResult.fit_score).padStart(3)}/100  [Role:${dims.role_relevance} Exp:${dims.experience_depth} Loc:${dims.location_fit} Comp:${dims.compensation_alignment} Culture:${dims.culture_signals}]`);
+      log(`    ${scoreResult.summary}`);
     }
 
     // ================================================================
@@ -545,12 +566,46 @@ async function simulate() {
     await client.query('DELETE FROM cv_submissions WHERE id = $1', [testCV.id]);
     await client.query('DELETE FROM candidates WHERE id = $1', [testCandidate.id]);
 
+    // ================================================================
+    // STEP 16: Analytics deep dive
+    // ================================================================
+    const AnalyticsService = require('../src/services/analyticsService');
+
+    header('ANALYTICS DEEP DIVE');
+
+    const dropoff = await AnalyticsService.getStageDropoff(requisition.id);
+    log('\n  Stage Drop-off (this requisition):');
+    for (const s of dropoff) {
+      const bar = '█'.repeat(s.count * 4);
+      log(`    ${s.stage.padEnd(18)} ${bar} ${s.count}  (${s.conversion_pct}%)`);
+    }
+
+    const briefEffectiveness = await AnalyticsService.getBriefingEffectiveness();
+    log(`\n  Briefing Effectiveness:`);
+    log(`    Total: ${briefEffectiveness.total} | Pass Rate: ${briefEffectiveness.pass_rate_pct}% | Hire After Pass: ${briefEffectiveness.hire_rate_after_pass}%`);
+
+    const roleFamilyStats = await AnalyticsService.getRoleFamilyBreakdown();
+    log('\n  Role Family Breakdown:');
+    log(`  ${'Family'.padEnd(15)} ${'Subs'.padStart(5)} ${'Hires'.padStart(6)} ${'Yield%'.padStart(7)} ${'AvgTTF'.padStart(7)}`);
+    log('  ' + '-'.repeat(45));
+    for (const rf of roleFamilyStats.slice(0, 5)) {
+      log(`  ${rf.role_family.padEnd(15)} ${String(rf.total_submissions).padStart(5)} ${String(rf.hires).padStart(6)} ${(rf.yield_pct + '%').padStart(7)} ${(rf.avg_time_to_fill ? rf.avg_time_to_fill + 'd' : 'N/A').padStart(7)}`);
+    }
+
+    const consultComparison = await AnalyticsService.getConsultantComparison(5);
+    log('\n  Top 5 Consultants (overall):');
+    for (const c of consultComparison) {
+      log(`    ${c.firm_name.padEnd(25)} Yield: ${c.overall_yield_pct}% | TTF: ${c.avg_time_to_fill || 'N/A'}d`);
+    }
+
     header('SIMULATION COMPLETE');
-    log('\n  All 4 subsystems exercised:');
+    log('\n  All 6 subsystems exercised:');
     log('    1. Consultant Ranking: Yield-based rankings queried and used for auto-assignment');
-    log('    2. CV Pipeline: Full 6-stage lifecycle (submitted → hired) with screening and rejection');
-    log('    3. Briefing Gate: Conversations simulated, pass/fail evaluated, gate enforcement verified');
-    log('    4. Interview Scheduling: Slots created, scheduling links generated, candidates self-booked');
+    log('    2. CV Pipeline: Full 7-stage lifecycle (submitted → hired) with screening and rejection');
+    log('    3. CV Triage: Auto-scored candidates against JD with 5-dimension breakdown');
+    log('    4. Briefing Gate: Conversations simulated, pass/fail evaluated, gate enforcement verified');
+    log('    5. Interview Scheduling: Slots created, scheduling links generated, candidates self-booked');
+    log('    6. Analytics: Drop-off analysis, briefing effectiveness, role family breakdown');
     log('\n  The hiring pipeline is operational. 🚀\n');
 
   } catch (err) {

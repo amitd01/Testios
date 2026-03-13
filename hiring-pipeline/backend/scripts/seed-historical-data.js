@@ -128,10 +128,16 @@ async function seed() {
           const accepted = offered && coinFlip(acceptRate);
           const ttf = accepted ? avgTtf + randomInt(-10, 15) : null;
 
+          // Spread dates across last 24 months for analytics trend data
+          const monthsAgo = randomInt(0, 23);
+          const daysAgo = monthsAgo * 30 + randomInt(0, 29);
+          const createdDate = new Date();
+          createdDate.setDate(createdDate.getDate() - daysAgo);
+
           await client.query(
-            `INSERT INTO hiring_outcomes (consultant_id, role_family_id, submitted, interviewed, offered, accepted, time_to_fill_days)
-             VALUES ($1, $2, true, $3, $4, $5, $6)`,
-            [consultantId, rfId, interviewed, offered, accepted, ttf]
+            `INSERT INTO hiring_outcomes (consultant_id, role_family_id, submitted, interviewed, offered, accepted, time_to_fill_days, created_at)
+             VALUES ($1, $2, true, $3, $4, $5, $6, $7)`,
+            [consultantId, rfId, interviewed, offered, accepted, ttf, createdDate.toISOString()]
           );
 
           totalOutcomes++;

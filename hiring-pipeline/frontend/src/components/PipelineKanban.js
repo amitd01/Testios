@@ -30,6 +30,17 @@ function PipelineKanban({ submissions, onAdvance, onReject }) {
               <div style={{ fontSize: 11, color: '#636e72', marginTop: 2 }}>
                 {sub.consultant_firm || 'Direct'}
               </div>
+              {sub.fit_score != null && (
+                <div style={{ marginTop: 4 }}>
+                  <span style={{
+                    display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600,
+                    background: sub.fit_score >= 70 ? '#e8f5e9' : sub.fit_score >= 40 ? '#fff8e1' : '#fce4ec',
+                    color: sub.fit_score >= 70 ? '#2e7d32' : sub.fit_score >= 40 ? '#f57f17' : '#c62828',
+                  }}>
+                    Fit: {sub.fit_score}/100
+                  </span>
+                </div>
+              )}
               {sub.briefing_status && (
                 <div style={{ marginTop: 4 }}>
                   <BriefingStatus status={sub.briefing_status} />

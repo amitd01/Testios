@@ -7,6 +7,7 @@ function Dashboard() {
   const [pipeline, setPipeline] = useState([]);
   const [aging, setAging] = useState([]);
   const [requisitions, setRequisitions] = useState([]);
+  const [allCvs, setAllCvs] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -14,10 +15,12 @@ function Dashboard() {
       api.get('/cv-submissions/dashboard').catch(() => ({ data: [] })),
       api.get('/cv-submissions/aging?days=3').catch(() => ({ data: [] })),
       api.get('/requisitions?status=open').catch(() => ({ data: [] })),
-    ]).then(([pRes, aRes, rRes]) => {
+      api.get('/cv-submissions').catch(() => ({ data: [] })),
+    ]).then(([pRes, aRes, rRes, cvRes]) => {
       setPipeline(pRes.data);
       setAging(aRes.data);
       setRequisitions(rRes.data);
+      setAllCvs(cvRes.data);
       setLoading(false);
     });
   }, []);
@@ -27,14 +30,26 @@ function Dashboard() {
   const totalActive = pipeline.filter(p => !['hired', 'rejected'].includes(p.status))
     .reduce((sum, p) => sum + parseInt(p.count), 0);
 
+  const scoredCvs = allCvs.filter(cv => cv.fit_score != null);
+  const avgFitScore = scoredCvs.length > 0
+    ? Math.round(scoredCvs.reduce((sum, cv) => sum + cv.fit_score, 0) / scoredCvs.length)
+    : null;
+
   return (
     <div>
       <h1 className="mb-4">Pipeline Dashboard</h1>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
         <div className="card">
           <h3>Active CVs</h3>
           <p style={{ fontSize: 32, fontWeight: 700 }}>{totalActive}</p>
+        </div>
+        <div className="card">
+          <h3>Avg Fit Score</h3>
+          <p style={{ fontSize: 32, fontWeight: 700, color: avgFitScore >= 70 ? '#00b894' : avgFitScore >= 40 ? '#f39c12' : '#d63031' }}>
+            {avgFitScore != null ? `${avgFitScore}/100` : 'N/A'}
+          </p>
+          <p style={{ fontSize: 12, color: '#636e72' }}>{scoredCvs.length} CVs scored</p>
         </div>
         <div className="card">
           <h3>Aging Alerts</h3>

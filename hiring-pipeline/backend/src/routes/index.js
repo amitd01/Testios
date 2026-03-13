@@ -7,6 +7,7 @@ const requisitionCtrl = require('../controllers/requisitionController');
 const cvCtrl = require('../controllers/cvController');
 const briefingCtrl = require('../controllers/briefingController');
 const interviewCtrl = require('../controllers/interviewController');
+const analyticsCtrl = require('../controllers/analyticsController');
 
 // --- Role Families ---
 router.get('/role-families', auth, consultantCtrl.listRoleFamilies);
@@ -33,6 +34,7 @@ router.get('/cv-submissions', auth, cvCtrl.list);
 router.get('/cv-submissions/dashboard', auth, cvCtrl.dashboard);
 router.get('/cv-submissions/aging', auth, cvCtrl.aging);
 router.get('/cv-submissions/:id', auth, cvCtrl.getById);
+router.get('/cv-submissions/:id/score', auth, cvCtrl.getScore);
 router.patch('/cv-submissions/:id/advance', auth, cvCtrl.advance);
 router.patch('/cv-submissions/:id/reject', auth, cvCtrl.reject);
 
@@ -59,5 +61,12 @@ router.post('/interviews/create-link', auth, interviewCtrl.createSchedulingLink)
 // --- Interview Scheduling (public - candidate access via token) ---
 router.get('/interviews/schedule/:token', interviewCtrl.getScheduleByToken);
 router.post('/interviews/schedule/:token/book', interviewCtrl.bookSlot);
+
+// --- Analytics ---
+router.get('/analytics/time-to-hire', auth, analyticsCtrl.timeToHire);
+router.get('/analytics/consultant-comparison', auth, analyticsCtrl.consultantComparison);
+router.get('/analytics/stage-dropoff', auth, analyticsCtrl.stageDropoff);
+router.get('/analytics/briefing-effectiveness', auth, analyticsCtrl.briefingEffectiveness);
+router.get('/analytics/role-family-breakdown', auth, analyticsCtrl.roleFamilyBreakdown);
 
 module.exports = router;

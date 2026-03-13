@@ -1,6 +1,7 @@
 const CvSubmission = require('../models/CvSubmission');
 const Candidate = require('../models/Candidate');
 const YieldCalculator = require('../services/yieldCalculator');
+const TriageService = require('../services/triageService');
 
 exports.submit = async (req, res) => {
   try {
@@ -40,7 +41,42 @@ exports.submit = async (req, res) => {
       });
     }
 
+    // Auto-score the submission
+    try {
+      const reqRow = await pool.query('SELECT * FROM requisitions WHERE id = $1', [requisition_id]);
+      if (reqRow.rows[0]) {
+        const scoreResult = await TriageService.score(
+          { ...submission, candidate_name, consultant_rationale },
+          reqRow.rows[0]
+        );
+        await CvSubmission.updateScore(submission.id, {
+          fit_score: scoreResult.fit_score,
+          fit_analysis: { dimensions: scoreResult.dimensions, summary: scoreResult.summary, method: scoreResult.method },
+        });
+        submission.fit_score = scoreResult.fit_score;
+        submission.fit_analysis = scoreResult;
+      }
+    } catch (scoreErr) {
+      // Scoring failure should not block submission
+    }
+
     res.status(201).json(submission);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getScore = async (req, res) => {
+  try {
+    const submission = await CvSubmission.findById(req.params.id);
+    if (!submission) return res.status(404).json({ error: 'CV submission not found' });
+    res.json({
+      id: submission.id,
+      candidate_name: submission.candidate_name,
+      fit_score: submission.fit_score,
+      fit_analysis: submission.fit_analysis,
+      scored_at: submission.scored_at,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

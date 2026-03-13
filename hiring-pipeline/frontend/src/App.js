@@ -7,6 +7,7 @@ import Requisitions from './pages/Requisitions';
 import RequisitionDetail from './pages/RequisitionDetail';
 import BriefingChat from './pages/BriefingChat';
 import InterviewBooking from './pages/InterviewBooking';
+import Analytics from './pages/Analytics';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
           <Route path="/consultants" element={<Consultants />} />
           <Route path="/requisitions" element={<Requisitions />} />
           <Route path="/requisitions/:id" element={<RequisitionDetail />} />
+          <Route path="/analytics" element={<Analytics />} />
         </Route>
       </Routes>
     </BrowserRouter>
