@@ -35,6 +35,7 @@ router.get('/cv-submissions/dashboard', auth, cvCtrl.dashboard);
 router.get('/cv-submissions/aging', auth, cvCtrl.aging);
 router.get('/cv-submissions/:id', auth, cvCtrl.getById);
 router.get('/cv-submissions/:id/score', auth, cvCtrl.getScore);
+router.post('/cv-submissions/:id/rescore', auth, cvCtrl.rescore);
 router.patch('/cv-submissions/:id/advance', auth, cvCtrl.advance);
 router.patch('/cv-submissions/:id/reject', auth, cvCtrl.reject);
 

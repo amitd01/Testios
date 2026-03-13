@@ -135,6 +135,32 @@ exports.dashboard = async (req, res) => {
   }
 };
 
+exports.rescore = async (req, res) => {
+  try {
+    const submission = await CvSubmission.findById(req.params.id);
+    if (!submission) return res.status(404).json({ error: 'CV submission not found' });
+
+    const pool = require('../config/database');
+    const reqRow = await pool.query('SELECT * FROM requisitions WHERE id = $1', [submission.requisition_id]);
+    if (!reqRow.rows[0]) return res.status(400).json({ error: 'Requisition not found' });
+
+    const scoreResult = await TriageService.score(submission, reqRow.rows[0]);
+    await CvSubmission.updateScore(submission.id, {
+      fit_score: scoreResult.fit_score,
+      fit_analysis: { dimensions: scoreResult.dimensions, summary: scoreResult.summary, method: scoreResult.method },
+    });
+
+    res.json({
+      id: submission.id,
+      fit_score: scoreResult.fit_score,
+      fit_analysis: scoreResult,
+      scored_at: new Date(),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 exports.aging = async (req, res) => {
   try {
     const threshold = parseInt(req.query.days) || 3;
