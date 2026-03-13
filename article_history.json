@@ -1,1 +1,135 @@
-{}
+{
+  "2026-03-13": {
+    "run_at": "2026-03-13T11:44:54",
+    "teaser": "Today's picks dive deep into transformative ideas reshaping how we work and connect. From Paul Graham's provocative take on how brands are hijacking our mental bandwidth to Chris Evert and Martina Navratilova's extraordinary friendship transcending tennis rivalries, these stories reveal profound shifts in business, relationships, and human connection. We're also exploring how shadow gaming operators infiltrated India's payment systems and discovering new tools that promise to revolutionize developer workflows. Plus, a nostalgic journey through quiz show excellence that reminds us what intellectual rigor once looked like on television.",
+    "included": [
+      {
+        "rank": 1,
+        "title": "The Brand Age",
+        "url": "https://paulgraham.com/brandage.html",
+        "source": "X Bookmark / Paul Graham",
+        "score": 8.5,
+        "scores": {
+          "originality": 9.0,
+          "real_world_impact": 8.0,
+          "writing_quality": 9.0,
+          "interestingness": 8.0
+        },
+        "summary": "Paul Graham argues we've entered a new historical epoch—the Brand Age—where corporate brands have become so omnipresent they fundamentally alter how we perceive reality. Unlike previous eras defined by technological or political systems, this age is characterized by brands that actively shape our mental models, often distorting our understanding of quality, value, and truth. Graham contends that brands, originally simple markers of origin, have evolved into sophisticated psychological manipulation tools that exploit cognitive biases and social signaling. He suggests this represents a profound shift in human consciousness, where authentic judgment becomes increasingly difficult as brands colonize our mental bandwidth. The essay explores how this affects everything from consumer choices to intellectual discourse, arguing that brand-mediated thinking creates a kind of cognitive pollution that interferes with clear reasoning. Graham proposes that recognizing this brand-saturated environment is the first step toward reclaiming authentic perception and decision-making, suggesting we need new frameworks for navigating a world where corporate messaging has become environmental rather than merely commercial.",
+        "tags": [
+          "psychology",
+          "business",
+          "culture",
+          "branding"
+        ],
+        "source_type": "x"
+      },
+      {
+        "rank": 2,
+        "title": "Chris Evert and Martina Navratilova's Cancer Journey",
+        "url": "https://washingtonpost.com/sports/interactive/2023/chris-evert-martina-navratilova-cancer/",
+        "source": "X Bookmark / Anindya Dutta",
+        "score": 7.8,
+        "scores": {
+          "originality": 8.0,
+          "real_world_impact": 7.0,
+          "writing_quality": 8.0,
+          "interestingness": 8.0
+        },
+        "summary": "This Washington Post interactive feature chronicles the profound friendship between tennis legends Chris Evert and Martina Navratilova as they simultaneously battled different forms of cancer. Despite being fierce rivals on court for over a decade—with their contrasting styles and personalities defining women's tennis in the 1970s and 80s—the two champions developed an unexpected bond that deepened during their parallel health crises. Evert faced ovarian cancer while Navratilova confronted throat and breast cancer diagnoses, leading to a shared journey of treatments, fears, and mutual support that transcended their competitive history. The piece explores how their relationship evolved from professional rivalry to genuine friendship, examining the unique pressures female athletes face and how shared vulnerability can transform even the most competitive relationships. Through intimate interviews and archival footage, the story reveals how these two icons supported each other through chemotherapy, surgery, and recovery, offering a powerful meditation on friendship, mortality, and resilience. The interactive format enhances the narrative with multimedia elements that bring their story to life, showing how champions in sport can become champions in life's most challenging moments.",
+        "tags": [
+          "sports",
+          "health",
+          "friendship",
+          "tennis"
+        ],
+        "source_type": "x"
+      },
+      {
+        "rank": 3,
+        "title": "Shadow Gaming Investigation",
+        "url": "https://t.co/k2L4EguBPr",
+        "source": "X Like / Arti Singh",
+        "score": 7.5,
+        "scores": {
+          "originality": 8.0,
+          "real_world_impact": 8.0,
+          "writing_quality": 7.0,
+          "interestingness": 7.0
+        },
+        "summary": "This investigative report from September 2025, now made freely available, exposes a sophisticated scheme where shadow gaming operators infiltrated India's payment infrastructure by masquerading as legitimate e-commerce merchants. The investigation reveals how banks, third-party payment processors, and payment aggregators collaborated—either knowingly or through negligent oversight—to process transactions for gambling operations that were prohibited under Indian law. These shadow operators exploited regulatory gaps and lax due diligence processes to obtain merchant accounts, effectively laundering gambling transactions through seemingly legitimate payment channels. The report documents how these operators used sophisticated technical setups to disguise their true nature, often routing payments through multiple intermediaries to obscure the money trail. The investigation uncovers the scale of this underground economy, estimated to process billions in illegal gambling transactions while regulators struggled to keep pace. The findings highlight systemic weaknesses in India's payment oversight framework and raise serious questions about compliance standards among financial institutions. The report's release as free-to-read content suggests its public interest value, potentially influencing regulatory reforms and enforcement actions in India's rapidly evolving digital payments landscape.",
+        "tags": [
+          "fintech",
+          "regulation",
+          "gaming",
+          "investigation"
+        ],
+        "source_type": "x"
+      },
+      {
+        "rank": 4,
+        "title": "gstack Development Tool",
+        "url": "https://github.com/garrytan/gstack",
+        "source": "X Like / Garry Tan",
+        "score": 7.0,
+        "scores": {
+          "originality": 7.0,
+          "real_world_impact": 7.0,
+          "writing_quality": 6.0,
+          "interestingness": 8.0
+        },
+        "summary": "Y Combinator president Garry Tan has released gstack, an open-source MIT-licensed tool designed to streamline developer workflows in AI-assisted coding environments. The tool addresses a common pain point for developers using Claude Code or Cursor: the tedious process of setting up context for AI assistants, which typically requires 15 minutes of copying and pasting relevant code, documentation, and project information. gstack reduces this setup time to under a minute through automated context management. The tool integrates with Obsidian, leveraging its markdown-based note system to create persistent, searchable repositories of project context that can be quickly loaded into AI coding assistants. This approach solves the storage problem by ensuring all notes and context remain as local markdown files owned by the developer, avoiding vendor lock-in while maintaining privacy and control. The tool appears particularly valuable for product managers and developers who regularly conduct research, strategy, and discovery work using AI assistants, as it eliminates repetitive manual work while maintaining organized documentation. By open-sourcing the project, Tan enables community contributions and adaptations, potentially accelerating adoption across development teams seeking to optimize their AI-assisted workflows.",
+        "tags": [
+          "development",
+          "ai-tools",
+          "open-source",
+          "productivity"
+        ],
+        "source_type": "x"
+      },
+      {
+        "rank": 5,
+        "title": "Mastermind Final 2001 at Udaipur Palace",
+        "url": "https://youtu.be/VV-CA3K57v0",
+        "source": "X Bookmark / Siddhartha Basu",
+        "score": 6.5,
+        "scores": {
+          "originality": 6.0,
+          "real_world_impact": 6.0,
+          "writing_quality": 7.0,
+          "interestingness": 7.0
+        },
+        "summary": "Quiz show producer Siddhartha Basu has unearthed and shared a remarkable 2001 Mastermind final filmed at the Fateh Niwas palace of the Maharanas of Udaipur, representing a pinnacle of intellectual competition and television craftsmanship. This archived episode showcases contestants demonstrating extraordinary knowledge across diverse subjects, filmed in the opulent setting of one of India's most historic palaces. The discovery highlights the golden age of Indian quiz shows when intellectual rigor and production values created compelling television that celebrated learning and expertise. Basu's commentary emphasizes the contestants' \"terrific performance,\" suggesting this particular final represented exceptionally high standards of competition. The palace setting adds a layer of cultural significance, connecting contemporary intellectual achievement with India's royal heritage and architectural grandeur. The rescue of this content from archives demonstrates the importance of preserving television history, particularly programming that showcased intellectual achievement and cultural sophistication. The episode serves as a time capsule of early 2000s Indian television, when quiz shows occupied a prestigious position in the cultural landscape and attracted participants with genuinely impressive depth of knowledge across multiple disciplines.",
+        "tags": [
+          "television",
+          "quiz-shows",
+          "culture",
+          "archive"
+        ],
+        "source_type": "x"
+      }
+    ],
+    "excluded": [
+      {
+        "subject": "New free subscriber to Data Signs!",
+        "reason": "Substack notification email with no article content"
+      },
+      {
+        "subject": "Karan Punjabi followed you on Substack",
+        "reason": "Social notification with no substantive content"
+      },
+      {
+        "subject": "Varsity Live session on basics of commodity trading",
+        "reason": "Promotional email for webinar registration"
+      },
+      {
+        "subject": "ChatGPT and Whisper are now available through our API",
+        "reason": "Old promotional announcement from 2023 with incomplete content"
+      },
+      {
+        "subject": "gstack context management for product managers",
+        "reason": "Duplicate content already covered in main gstack article"
+      }
+    ]
+  }
+}
