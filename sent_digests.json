@@ -57,5 +57,25 @@
       "https://thedailybrief.zerodha.com/p/the-iran-war-and-indias-fertilizer",
       "https://pm2dev.substack.com/p/pm-to-rust-dev-episode-0003-rtfm"
     ]
+  },
+  "2026-03-13": {
+    "message_ids": [
+      "19ce549857f38e45",
+      "19ce4eef52f4003c",
+      "19ce45c82db74c76",
+      "19ce35ea969c529e",
+      "19ce2df99b08edb3",
+      "19ce2daa3b7a9b1f",
+      "19ce29d3c6ce678a",
+      "19ce25f15b4eae7a",
+      "19ce20cd649da0f3",
+      "19ce0e29e2ed5b32"
+    ],
+    "article_urls": [
+      "https://www.a16z.news/p/institutional-ai-vs-individual-ai",
+      "https://bookstopology.substack.com/p/google-deepminds-reinforced-generation",
+      "https://aimaker.substack.com/p/google-workspace-cli-claude-code-daily-operating-system",
+      "https://thedailybrief.zerodha.com/p/what-is-oil-actually"
+    ]
   }
 }
