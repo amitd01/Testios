@@ -139,6 +139,8 @@ def _make_settings():
     settings.digest_recipient = "test@example.com"
     settings.gmail_sender = "sender@gmail.com"
     settings.summary_max_words = 250
+    settings.max_articles = 8
+    settings.min_score_threshold = 6.5
     return settings
 
 

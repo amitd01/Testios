@@ -21,8 +21,9 @@ from .models import Article, ExcludedItem, ScoreBreakdown, Newsletter
 log = logging.getLogger(__name__)
 
 CLAUDE_MODEL = "claude-sonnet-4-20250514"
-MAX_BODY_CHARS_EMAIL = 3000  # Token budget per email body
-MAX_BODY_CHARS_TWEET = 500   # Tweets are short
+MAX_BODY_CHARS_EMAIL = 3000       # Token budget per email body
+MAX_BODY_CHARS_TWEET = 500        # Short tweets
+MAX_BODY_CHARS_LONG_TWEET = 1500  # Long-form tweets used as articles
 
 
 def _build_system_prompt(max_words: int) -> str:
@@ -36,24 +37,29 @@ def _build_system_prompt(max_words: int) -> str:
     )
 
 
-def _build_user_template(max_words: int) -> str:
+def _build_user_template(max_words: int, max_articles: int = 8, min_score: float = 6.5) -> str:
     min_words = max_words - 50
     return (
         "Analyse these {n} item(s) from the last 24 hours.\n"
-        "Items come from two sources:\n"
+        "Items come from three sources:\n"
         "- EMAIL: Newsletter emails with full article content and links.\n"
         "- X/TWITTER: Bookmarked or liked tweets with embedded article links.\n"
+        "- WHITELIST: Manually curated articles — treat these as high-priority candidates.\n"
         "\n"
         "Rules:\n"
         "- Skip pure promotional emails, political campaigns, bounce notifications, or empty digests.\n"
         "- For X/TWITTER items, the tweet text provides context about the linked article.\n"
         "  Use the embedded link as the article URL. Skip tweets with no substantive article link.\n"
+        "- For long-form tweets where the LINKS field points to twitter.com/x.com (no external article),\n"
+        "  the tweet text IS the article — summarise the tweet content directly.\n"
         "- One entry per substantive article (a newsletter may contain multiple).\n"
         f"- Keep summaries between {min_words} and {max_words} words.\n"
         "- Use the best article URL found in the email body or tweet links;\n"
         "  fall back to the newsletter's web-view URL.\n"
         "- In the 'source' field, preserve whether it came from a newsletter or X bookmark/like.\n"
         "- Rank 1 = best overall.\n"
+        f"- Only include articles whose average score is ≥ {min_score}. Exclude anything below this threshold.\n"
+        f"- Return at most {max_articles} ranked articles.\n"
         "\n"
         "Scoring rubric (0–10 each):\n"
         "  - originality: Novel angle or non-obvious insight — not just restating existing coverage\n"
@@ -122,11 +128,13 @@ def _parse_response(raw: str) -> tuple[list[Article], list[ExcludedItem], str, s
             interestingness=float(scores_raw.get("interestingness", 0)),
         )
         source_str = str(item.get("source", ""))
-        source_type = (
-            "x"
-            if any(tag in source_str.lower() for tag in ("x bookmark", "x like", "via x"))
-            else "email"
-        )
+        src_lower = source_str.lower()
+        if any(tag in src_lower for tag in ("x bookmark", "x like", "via x")):
+            source_type = "x"
+        elif "whitelist" in src_lower:
+            source_type = "whitelist"
+        else:
+            source_type = "email"
         articles.append(
             Article(
                 rank=int(item.get("rank", 0)),
@@ -190,16 +198,35 @@ def summarise_and_rank(
 
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     max_words = settings.summary_max_words
+    max_articles = settings.max_articles
+    min_score = settings.min_score_threshold
     system_prompt = _build_system_prompt(max_words)
-    user_template = _build_user_template(max_words)
+    user_template = _build_user_template(max_words, max_articles=max_articles, min_score=min_score)
     max_tokens = max(4096, max_words * 30)
 
     blocks: list[str] = []
     for i, nl in enumerate(newsletters, 1):
         links_str = "; ".join(nl.links) if nl.links else "none"
         is_x = nl.id.startswith("x:")
-        source_type = "X/TWITTER" if is_x else "EMAIL"
-        body_limit = MAX_BODY_CHARS_TWEET if is_x else MAX_BODY_CHARS_EMAIL
+        is_whitelist = nl.id.startswith("whitelist::")
+        # Long-form tweets have a single x.com link (the tweet itself as article)
+        is_long_tweet = (
+            is_x
+            and len(nl.links) == 1
+            and ("x.com" in nl.links[0] or "twitter.com" in nl.links[0])
+        )
+        if is_whitelist:
+            source_type = "WHITELIST"
+        elif is_x:
+            source_type = "X/TWITTER"
+        else:
+            source_type = "EMAIL"
+        if is_long_tweet:
+            body_limit = MAX_BODY_CHARS_LONG_TWEET
+        elif is_x:
+            body_limit = MAX_BODY_CHARS_TWEET
+        else:
+            body_limit = MAX_BODY_CHARS_EMAIL
         blocks.append(
             f"[{i}] TYPE: {source_type}\n"
             f"FROM: {nl.sender}\n"
@@ -230,6 +257,16 @@ def summarise_and_rank(
     if excluded:
         for item in excluded:
             log.info("Excluded by Claude: '%s' — %s", item.subject, item.reason)
+
+    # Python-side safety filters: enforce score threshold and article cap.
+    before = len(articles)
+    articles = [a for a in articles if a.score >= min_score]
+    articles = articles[:max_articles]
+    if len(articles) < before:
+        log.info(
+            "Post-filter: %d → %d article(s) (threshold=%.1f, cap=%d).",
+            before, len(articles), min_score, max_articles,
+        )
 
     log.info("Claude ranked %d article(s), excluded %d.", len(articles), len(excluded))
     return articles, excluded, teaser, quote, quote_attribution

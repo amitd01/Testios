@@ -127,11 +127,11 @@ class TestExtractArticleLinks:
         links = extract_article_links(body)
         assert links.count("https://example.com/article") == 1
 
-    def test_caps_at_six_by_default(self):
-        urls = [f"https://example.com/article-{i}" for i in range(10)]
+    def test_caps_at_ten_by_default(self):
+        urls = [f"https://example.com/article-{i}" for i in range(15)]
         body = " ".join(urls)
         links = extract_article_links(body)
-        assert len(links) <= 6
+        assert len(links) <= 10
 
     def test_respects_custom_cap(self):
         urls = [f"https://example.com/article-{i}" for i in range(10)]

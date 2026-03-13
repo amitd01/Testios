@@ -60,7 +60,7 @@ def _prefer_substack_web_view(body: str) -> str | None:
     return None
 
 
-def extract_article_links(body: str, cap: int = 6) -> list[str]:
+def extract_article_links(body: str, cap: int = 10) -> list[str]:
     """Pull candidate article URLs from email body, deduped and filtered.
 
     Prefers the Substack canonical URL when present. Falls back to scanning

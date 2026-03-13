@@ -1,63 +1,4 @@
 {
-  "2026-03-09": {
-    "message_ids": [
-      "19cd0561cf031653",
-      "19ccebb62c4a17bd",
-      "19cce1ea8770f6c3"
-    ]
-  },
-  "2026-03-10": {
-    "message_ids": [
-      "19cd4e5e7b9259bb",
-      "19cd2e9b7666e9b2"
-    ],
-    "article_urls": [
-      "https://writing.nikunjk.com/p/10x-is-the-new-floor",
-      "https://www.a16z.news/p/top-100-gen-ai-consumer-apps-march",
-      "https://livemint.com/money/personal-finance/itr-forms-ay-2025-26-more-disclosures-details-on-hra-home-loan-tds-11746609511740.html",
-      "https://washingtonpost.com/sports/interactive/2023/chris-evert-martina-navratilova-cancer/",
-      "https://t.co/DydXOyffUQ",
-      "https://mtrajan.substack.com/p/sarvam-open-is-not-sovereign",
-      "https://livemint.com/money/personal-finance/itr-forms-ay-2025-26-more-disclosures-details-on-hra-home-loan-tds-11746609511740.html",
-      "https://washingtonpost.com/sports/interactive/2023/chris-evert-martina-navratilova-cancer/",
-      "https://paulgraham.com/brandage.html",
-      "https://mtrajan.substack.com/p/sarvam-open-is-not-sovereign",
-      "https://t.co/xT9mnpHSxG"
-    ]
-  },
-  "2026-03-11": {
-    "message_ids": [
-      "19cda8e4b0b6de21",
-      "19cd924ccf939273",
-      "19cd8c7b70c8c642",
-      "19cd82dc99c333d3",
-      "19cd8130caede924",
-      "19cd7b53e17a2723",
-      "19cd76bab1d0c1ce"
-    ],
-    "article_urls": [
-      "https://thedailybrief.zerodha.com/p/pentagon-anthropic-and-the-promise",
-      "https://www.a16z.news/p/your-data-agents-need-context",
-      "https://aimaker.substack.com/p/vibe-coding-mistakes",
-      "https://pm2dev.substack.com/p/pm-to-rust-dev-episode-0002-what",
-      "https://paulgraham.com/brandage.html"
-    ]
-  },
-  "2026-03-12": {
-    "message_ids": [
-      "19cdfb5b0cdb16ba",
-      "19cdd36be098cecf",
-      "19cdd33f3f72cb50",
-      "19cdd2f838e1b22f",
-      "19cdc7c718f3f411"
-    ],
-    "article_urls": [
-      "https://navalsarchive.substack.com/p/the-word-that-forgot-its-own-name",
-      "https://www.a16z.news/p/the-world-needs-an-ai-lab-for-data",
-      "https://thedailybrief.zerodha.com/p/the-iran-war-and-indias-fertilizer",
-      "https://pm2dev.substack.com/p/pm-to-rust-dev-episode-0003-rtfm"
-    ]
-  },
   "2026-03-13": {
     "message_ids": [
       "19ce549857f38e45",
@@ -69,13 +10,22 @@
       "19ce29d3c6ce678a",
       "19ce25f15b4eae7a",
       "19ce20cd649da0f3",
-      "19ce0e29e2ed5b32"
+      "19ce0e29e2ed5b32",
+      "19cdfb5b0cdb16ba",
+      "19ce746ac41d0deb"
     ],
     "article_urls": [
       "https://www.a16z.news/p/institutional-ai-vs-individual-ai",
+      "https://paulgraham.com/brandage.html",
       "https://bookstopology.substack.com/p/google-deepminds-reinforced-generation",
       "https://aimaker.substack.com/p/google-workspace-cli-claude-code-daily-operating-system",
-      "https://thedailybrief.zerodha.com/p/what-is-oil-actually"
+      "https://thedailybrief.zerodha.com/p/the-iran-war-and-indias-fertilizer",
+      "https://www.404media.co/nvidia-ai-scraping-foundational-model-cosmos-project/",
+      "https://codewall.ai/",
+      "https://hellochinatech.com/p/openclaw-china-ai-stack",
+      "https://www.livemint.com/money/personal-finance/itr-forms-ay-2025-26-more-disclosures-details-on-hra-home-loan-tds-11746609511740.html",
+      "https://theheadandtale.com/deepdives/the-shadow-economy-of-online-gaming-how-money-moves-beyond-the-screen/",
+      "https://mtrajan.substack.com/p/sarvam-open-is-not-sovereign"
     ]
   }
 }

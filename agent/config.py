@@ -40,6 +40,43 @@ class Settings(BaseSettings):
     x_username: str = Field("", description="X/Twitter username for likes scraping")
     x_scroll_attempts: int = Field(25, description="Scroll iterations for X scraping")
 
+    # ── Compilation newsletters ────────────────────────────────────────────────
+    compilation_senders: str = Field(
+        "",
+        description="Comma-separated sender addresses whose emails should be expanded "
+        "(fetch each embedded article separately), e.g. 'list@ben-evans.com,digest@tldr.tech'",
+    )
+
+    # ── Article history ────────────────────────────────────────────────────────
+    article_history_file: str = Field(
+        "article_history.json",
+        description="Path to JSON file that stores per-run article history (30-day rolling)",
+    )
+
+    # ── Whitelisting ────────────────────────────────────────────────────────────
+    whitelist_file: str = Field(
+        "whitelist.txt",
+        description="Path to plain-text file with one manually curated URL per line",
+    )
+    whitelist_label: str = Field(
+        "newsletter-whitelist",
+        description="Gmail label whose emails' links are treated as whitelisted articles",
+    )
+
+    # ── Ranking / output ────────────────────────────────────────────────────────
+    max_articles: int = Field(
+        8,
+        description="Maximum number of articles to include in each digest",
+    )
+    min_score_threshold: float = Field(
+        6.5,
+        description="Minimum average score (0–10) an article must reach to be included",
+    )
+    compilation_min_links: int = Field(
+        2,
+        description="Emails with this many article links or more are expanded per-link",
+    )
+
     # ── Filtering ──────────────────────────────────────────────────────────────
     blocklist_senders: str = Field(
         "",

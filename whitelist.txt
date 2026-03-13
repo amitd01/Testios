@@ -1,0 +1,9 @@
+# Newsletter Agent — Article Whitelist
+# One URL per line. Blank lines and lines starting with # are ignored.
+# Inline comments are supported: https://example.com/article  # optional note
+#
+# URLs added here are injected as high-priority candidates on the next run.
+# They are subject to the same 7-day deduplication as all other articles.
+#
+# Example:
+#   https://example.com/my-favourite-article

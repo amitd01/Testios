@@ -1,0 +1,162 @@
+{
+  "2026-03-13": {
+    "run_at": "2026-03-13T19:36:58",
+    "teaser": "Today's picks dive deep into the machinery powering our digital world. From leaked documents revealing massive AI data scraping operations to cybersecurity breaches exposing vulnerabilities in major consulting platforms, we're seeing both the promise and perils of our increasingly automated landscape. Meanwhile, India's regulatory environment continues to evolve, with new tax disclosure requirements and investigations into shadow gaming economies revealing how money moves in unexpected ways. Each story illuminates a different facet of how technology, policy, and human behavior intersect in our rapidly changing world.",
+    "included": [
+      {
+        "rank": 1,
+        "title": "NVIDIA AI Scraping: 80 Years of Video Data Daily",
+        "url": "https://www.404media.co/nvidia-ai-scraping-foundational-model-cosmos-project/",
+        "source": "X bookmark from Jason Koebler",
+        "score": 8.0,
+        "scores": {
+          "originality": 9.0,
+          "real_world_impact": 8.0,
+          "writing_quality": 7.0,
+          "interestingness": 8.0
+        },
+        "summary": "Leaked Slack messages and internal documents reveal the staggering scale of NVIDIA's AI training data collection through their Cosmos project. The company processes 80 years worth of video content every single day - described internally as \"a human lifetime\" of footage - to train their foundational AI models. Despite legal and ethical concerns raised by staff members, the massive scraping operation received approval from the highest levels of the company. This investigation exposes the industrial-scale data harvesting that powers modern AI development, raising critical questions about consent, copyright, and the environmental impact of training increasingly large models. The leaked materials show internal debates about the legality and ethics of such extensive data collection, highlighting the tension between AI advancement and responsible development practices. NVIDIA's approach represents a new frontier in data acquisition for AI training, where the scale of collection has reached unprecedented levels that dwarf previous efforts by tech companies.",
+        "tags": [
+          "AI",
+          "data scraping",
+          "NVIDIA",
+          "ethics",
+          "machine learning"
+        ],
+        "source_type": "x"
+      },
+      {
+        "rank": 2,
+        "title": "Autonomous Agent Hacks McKinsey's AI Platform",
+        "url": "https://codewall.ai/",
+        "source": "X like from Dr Efi Pylarinou",
+        "score": 7.8,
+        "scores": {
+          "originality": 8.0,
+          "real_world_impact": 9.0,
+          "writing_quality": 7.0,
+          "interestingness": 7.0
+        },
+        "summary": "A security breach at McKinsey's AI platform Lilly exposed massive vulnerabilities in enterprise AI systems. An autonomous agent from Codewall.AI successfully accessed 46.5 million chat messages without authentication, revealing sensitive corporate communications and strategic discussions. The hack demonstrates critical security gaps in how major consulting firms deploy AI tools, particularly around data protection and access controls. The breach is significant not just for its scale, but for what it reveals about the security assumptions underlying enterprise AI platforms. McKinsey, as a premier consulting firm advising Fortune 500 companies on digital transformation, ironically fell victim to the very risks they likely counsel clients about. The incident highlights how autonomous agents can exploit security vulnerabilities at unprecedented speed and scale, accessing years of sensitive data in minutes. This breach will likely accelerate conversations about AI security standards, data governance, and the need for more robust authentication systems in enterprise AI deployments. The exposure of such a large volume of chat data also raises questions about what sensitive client information may have been compromised.",
+        "tags": [
+          "cybersecurity",
+          "AI",
+          "McKinsey",
+          "data breach",
+          "autonomous agents"
+        ],
+        "source_type": "x"
+      },
+      {
+        "rank": 3,
+        "title": "Chinese AI Companies Rally Around Open-Source Claw Project",
+        "url": "https://hellochinatech.com/p/openclaw-china-ai-stack",
+        "source": "X like from Poe Zhao",
+        "score": 7.5,
+        "scores": {
+          "originality": 8.0,
+          "real_world_impact": 8.0,
+          "writing_quality": 7.0,
+          "interestingness": 7.0
+        },
+        "summary": "China's major AI companies have converged around a single open-source project, with each building their own branded version: Zhipu's AutoClaw, Moonshot's KimiClaw, MiniMax's MaxClaw, Alibaba's CoPaw, ByteDance's ArkClaw, and Tencent's WorkBuddy. This unprecedented coordination represents a strategic shift in China's AI development approach, moving from fragmented competition to collaborative infrastructure building. The convergence around the Claw project signals China's attempt to create a unified AI ecosystem that can compete with Western alternatives while reducing dependency on foreign technology. Zhipu's stock jumped 13% following their AutoClaw launch, indicating strong market approval for this coordinated strategy. This collective approach allows Chinese companies to pool resources for foundational AI infrastructure while maintaining competitive differentiation in applications and services. The strategy mirrors China's broader tech sovereignty goals, creating domestic alternatives to Western-dominated AI tools and platforms. By standardizing on a common open-source foundation, these companies can accelerate development cycles while ensuring compatibility across the Chinese AI ecosystem. This coordination represents a new model for tech competition, where collaboration on infrastructure enables competition on innovation.",
+        "tags": [
+          "China",
+          "AI",
+          "open source",
+          "tech sovereignty",
+          "collaboration"
+        ],
+        "source_type": "x"
+      },
+      {
+        "rank": 4,
+        "title": "India's New ITR Forms Demand More Asset Disclosures",
+        "url": "https://www.livemint.com/money/personal-finance/itr-forms-ay-2025-26-more-disclosures-details-on-hra-home-loan-tds-11746609511740.html",
+        "source": "X bookmark from Neil Borate",
+        "score": 7.3,
+        "scores": {
+          "originality": 7.0,
+          "real_world_impact": 8.0,
+          "writing_quality": 7.0,
+          "interestingness": 7.0
+        },
+        "summary": "India's latest Income Tax Return (ITR) forms introduce significant new disclosure requirements that will impact high-income taxpayers and investors. The most notable change raises the asset disclosure threshold from ₹50 lakh to ₹1 crore in annual income, meaning more taxpayers must now detail their complete asset portfolio including real estate, investments, and foreign holdings. The forms also introduce complexity around capital gains reporting, requiring separate disclosure of gains made before and after July 23, 2024, when budget changes took effect. Additionally, taxpayers with long-term capital gains under ₹1.25 lakh can now use simplified ITR-1 or ITR-4 forms, streamlining the process for smaller investors. New requirements for detailed HRA and home loan deduction documentation reflect the government's push for greater transparency in tax benefits claimed. These changes represent India's evolving approach to tax compliance, balancing simplification for smaller taxpayers while increasing scrutiny on high-income individuals. The enhanced asset disclosure requirements align with global trends toward greater financial transparency and may help the government better track wealth concentration and tax avoidance. For taxpayers, these changes necessitate more careful record-keeping and may require professional assistance for compliance.",
+        "tags": [
+          "India",
+          "taxation",
+          "compliance",
+          "asset disclosure",
+          "financial regulation"
+        ],
+        "source_type": "x"
+      },
+      {
+        "rank": 5,
+        "title": "The Shadow Economy of Online Gaming: Money Movement Beyond the Screen",
+        "url": "https://theheadandtale.com/deepdives/the-shadow-economy-of-online-gaming-how-money-moves-beyond-the-screen/",
+        "source": "X like from Arti Singh",
+        "score": 7.0,
+        "scores": {
+          "originality": 7.0,
+          "real_world_impact": 7.0,
+          "writing_quality": 8.0,
+          "interestingness": 6.0
+        },
+        "summary": "An investigation reveals how banks, payment service providers, and aggregators collaborated to process transactions for shadow gaming operators who disguised themselves as legitimate e-commerce merchants. These operators exploited regulatory loopholes and payment system vulnerabilities to process billions in gaming transactions outside official oversight. The investigation uncovers a sophisticated network where gaming companies, unable to secure direct merchant accounts due to regulatory restrictions, partnered with seemingly legitimate businesses to process payments. Banks and payment aggregators, either knowingly or through inadequate due diligence, facilitated these transactions while earning substantial processing fees. The shadow gaming economy operates parallel to regulated gaming markets, processing real-money gaming transactions through creative interpretations of payment regulations. This system enabled the growth of a massive underground gaming economy while circumventing consumer protections and anti-money laundering requirements. The investigation reveals how financial institutions prioritized revenue over compliance, creating vulnerabilities in the financial system. The findings highlight the need for stronger merchant verification processes, enhanced due diligence requirements, and clearer regulations around digital gaming payments. This shadow economy represents a significant regulatory challenge as gaming continues its digital transformation.",
+        "tags": [
+          "gaming",
+          "fintech",
+          "regulatory compliance",
+          "shadow economy",
+          "payments"
+        ],
+        "source_type": "x"
+      },
+      {
+        "rank": 6,
+        "title": "Analysis: Sarvam's 'Open' AI Model and Digital Sovereignty",
+        "url": "https://mtrajan.substack.com/p/sarvam-open-is-not-sovereign",
+        "source": "X like from Thiyagarajan Maruthavanan",
+        "score": 6.8,
+        "scores": {
+          "originality": 7.0,
+          "real_world_impact": 7.0,
+          "writing_quality": 7.0,
+          "interestingness": 6.0
+        },
+        "summary": "A critical analysis of Sarvam AI's positioning challenges the notion that their 'open' model represents true digital sovereignty for India. The piece argues that despite marketing claims of independence, Sarvam's technology stack remains fundamentally dependent on Western infrastructure, algorithms, and training methodologies. The analysis explores the gap between rhetorical sovereignty and practical technological independence, questioning whether Indian AI companies can achieve genuine autonomy while relying on foundational technologies developed elsewhere. The author examines how Sarvam's open-source approach, while providing transparency, doesn't necessarily translate to strategic independence if the underlying architecture, training data, and computational resources originate from foreign sources. The piece highlights the complexity of achieving digital sovereignty in AI, where true independence requires control over the entire technology stack from semiconductors to algorithms. This critique reflects broader concerns about developing nations' ability to build genuinely sovereign AI capabilities in a landscape dominated by a few global tech powers. The analysis suggests that real sovereignty requires not just open-source software, but indigenous development of fundamental AI research, hardware capabilities, and data resources. The piece contributes to important discussions about what digital sovereignty actually means in the age of AI and whether current approaches by Indian companies are sufficient.",
+        "tags": [
+          "digital sovereignty",
+          "AI",
+          "India",
+          "open source",
+          "technology independence"
+        ],
+        "source_type": "x"
+      }
+    ],
+    "excluded": [
+      {
+        "subject": "Weekly Dose of Optimism #184",
+        "reason": "Newsletter digest format with promotional content for Ramp Sheets, lacks substantive standalone article"
+      },
+      {
+        "subject": "Evert and Navratilova friendship during cancer",
+        "reason": "Too old (July 2023) and outside 24-hour window"
+      },
+      {
+        "subject": "ChatGPT and Whisper API announcement",
+        "reason": "Too old (March 2023) and outside 24-hour window"
+      },
+      {
+        "subject": "Mastermind Final 2001 archive video",
+        "reason": "Too old (February 2023) and outside 24-hour window"
+      },
+      {
+        "subject": "gstack open source tool announcement",
+        "reason": "Simple tool announcement without sufficient depth for analysis"
+      }
+    ]
+  }
+}

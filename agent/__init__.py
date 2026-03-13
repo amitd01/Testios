@@ -7,6 +7,8 @@ import time
 from datetime import datetime
 
 from .config import Settings, load_settings
+from .fetcher import expand_compilation
+from .history import load_history, record_run, save_history
 from .dedup import (
     already_processed_ids,
     already_used_urls,
@@ -18,6 +20,7 @@ from .gmail import fetch_newsletters, get_gmail_service, send_digest
 from .models import Article as Article  # noqa: F401 — public re-export
 from .ranker import summarise_and_rank
 from .renderer import build_html, build_plain_text
+from .whitelist import build_whitelist_newsletters, fetch_gmail_whitelist_urls, load_whitelist_file
 from .x_scraper.loader import load_x_data
 from .x_scraper.scraper import main as _scrape_x
 
@@ -82,7 +85,20 @@ def main(dry_run: bool = False) -> None:
         log.error("Failed to connect to Gmail: %s", exc, exc_info=True)
         return
 
-    email_newsletters = fetch_newsletters(service, settings, already_processed)
+    raw_email_newsletters = fetch_newsletters(service, settings, already_processed)
+
+    # ── Expand compilation newsletters ────────────────────────────────────────
+    compilation_senders = [
+        s.strip().lower()
+        for s in settings.compilation_senders.split(",")
+        if s.strip()
+    ]
+    email_newsletters: list = []
+    for nl in raw_email_newsletters:
+        if _is_compilation(nl, compilation_senders, min_links=settings.compilation_min_links):
+            email_newsletters.extend(expand_compilation(nl, used_urls))
+        else:
+            email_newsletters.append(nl)
 
     # ── X/Twitter scrape ─────────────────────────────────────────────────────
     import asyncio
@@ -103,8 +119,14 @@ def main(dry_run: bool = False) -> None:
         used_urls,
     )
 
+    # ── Whitelisted articles ──────────────────────────────────────────────────
+    from .fetcher import fetch_article as _fetch_article
+    whitelist_urls = load_whitelist_file(settings.whitelist_file)
+    whitelist_urls += fetch_gmail_whitelist_urls(service, settings.whitelist_label)
+    whitelist_newsletters = build_whitelist_newsletters(whitelist_urls, used_urls, fetch_fn=_fetch_article)
+
     # ── Merge sources ─────────────────────────────────────────────────────────
-    all_newsletters = email_newsletters + x_newsletters
+    all_newsletters = email_newsletters + x_newsletters + whitelist_newsletters
 
     if not all_newsletters:
         log.info("No content found from emails or X — nothing to send.")
@@ -112,13 +134,19 @@ def main(dry_run: bool = False) -> None:
         return
 
     log.info(
-        "Sources: %d email newsletters, %d X tweets.",
+        "Sources: %d email newsletters, %d X tweets, %d whitelist articles.",
         len(email_newsletters),
         len(x_newsletters),
+        len(whitelist_newsletters),
     )
 
     # ── Claude ────────────────────────────────────────────────────────────────
     articles, excluded, teaser, quote, quote_attribution = summarise_and_rank(all_newsletters, settings)
+
+    # ── Article history (write even on dry-run so history is always current) ──
+    run_history = load_history(settings.article_history_file)
+    record_run(run_history, today_key, articles, excluded, teaser)
+    save_history(settings.article_history_file, run_history)
 
     if not articles:
         log.info("Claude found no substantive articles — nothing to send.")
@@ -152,6 +180,22 @@ def main(dry_run: bool = False) -> None:
 
     _finish_log(run_start, found=len(all_newsletters), ranked=len(articles), sent=sent)
     log.info("=== Newsletter Agent run complete ===")
+
+
+def _is_compilation(nl, compilation_senders: list[str], min_links: int = 2) -> bool:
+    """Return True if a newsletter should be expanded into individual articles.
+
+    A newsletter is treated as a compilation if:
+    1. Its sender matches a known compilation sender address/domain, OR
+    2. It has at least `min_links` extracted article links (default: 2), meaning
+       it is a digest/aggregator with multiple distinct articles embedded.
+    """
+    sender_lower = nl.sender.lower()
+    if any(s in sender_lower for s in compilation_senders if s):
+        return True
+    if len(nl.links) >= min_links:
+        return True
+    return False
 
 
 def _finish_log(
