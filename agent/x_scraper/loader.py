@@ -10,6 +10,10 @@ from ..models import Newsletter
 
 log = logging.getLogger(__name__)
 
+# Long-form tweets (threads, essays) with no external link are treated as
+# first-class articles when they exceed this word threshold.
+LONG_TWEET_MIN_WORDS = 150
+
 
 def load_x_data(
     bookmarks_csv: str,
@@ -18,8 +22,10 @@ def load_x_data(
 ) -> list[Newsletter]:
     """Read scraper CSVs and return Newsletter objects with unused links.
 
-    Tweets whose embedded links have *all* already appeared in past
-    digests are skipped entirely.
+    Three-path decision per tweet:
+    1. Has embedded links → use those (existing behaviour, deduped against used_urls).
+    2. No links but text ≥ LONG_TWEET_MIN_WORDS → treat tweet URL as article URL.
+    3. Short tweet, no link → drop.
 
     Args:
         bookmarks_csv: Path to bookmarks.csv.
@@ -44,22 +50,35 @@ def load_x_data(
             reader = csv.DictReader(f)
             for row in reader:
                 embedded = row.get("embedded_links", "")
-                if not embedded.strip():
-                    continue
-
-                links = [l.strip() for l in embedded.split(",") if l.strip()]
-                # Filter out links already used in past digests
-                new_links = [l for l in links if l not in used_urls]
-
-                if not new_links:
-                    log.debug(
-                        "All links from tweet %s already used — skipping.",
-                        row.get("url", ""),
-                    )
-                    continue
-
                 tweet_url = row.get("url", "")
+                text = row.get("text", "")
                 author = row.get("author", "Unknown").replace("\n", " ")
+
+                if embedded.strip():
+                    links = [l.strip() for l in embedded.split(",") if l.strip()]
+                    # Filter out links already used in past digests
+                    new_links = [l for l in links if l not in used_urls]
+                    if not new_links:
+                        log.debug(
+                            "All links from tweet %s already used — skipping.",
+                            tweet_url,
+                        )
+                        continue
+                elif len(text.split()) >= LONG_TWEET_MIN_WORDS:
+                    # Long-form tweet with no external link — use tweet URL itself
+                    if tweet_url in used_urls:
+                        log.debug(
+                            "Long-form tweet %s already used — skipping.", tweet_url
+                        )
+                        continue
+                    new_links = [tweet_url]
+                    log.debug(
+                        "Long-form tweet (%d words) loaded as article: %s",
+                        len(text.split()),
+                        tweet_url,
+                    )
+                else:
+                    continue  # short tweet, no link → drop
 
                 newsletters.append(
                     Newsletter(
