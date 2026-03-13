@@ -2,75 +2,258 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Hiring Pipeline - Trial Run Report</title>
+<title>Hiring Pipeline - Frontend Simulation</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f6fa;color:#2d3436;line-height:1.6}.header{background:linear-gradient(135deg,#2d3436,#636e72);color:white;padding:40px}.header h1{font-size:28px;margin-bottom:8px}.header p{opacity:.8;font-size:14px}.container{max-width:1200px;margin:0 auto;padding:20px}.section{background:white;border-radius:12px;padding:24px;margin-bottom:24px;box-shadow:0 2px 8px rgba(0,0,0,.06)}.section h2{font-size:20px;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #f0f0f0}.section h3{font-size:16px;margin:16px 0 10px;color:#636e72}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:20px}.metric{background:#f8f9fa;border-radius:8px;padding:16px;text-align:center}.metric .value{font-size:32px;font-weight:700;color:#2d3436}.metric .label{font-size:12px;color:#636e72;text-transform:uppercase;letter-spacing:.5px;margin-top:4px}table{width:100%;border-collapse:collapse;font-size:14px}th{background:#f8f9fa;padding:10px 12px;text-align:left;font-weight:600;font-size:12px;text-transform:uppercase;color:#636e72;letter-spacing:.5px}td{padding:10px 12px;border-bottom:1px solid #f0f0f0}tr:hover{background:#f8f9fa}.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;text-transform:uppercase}.badge-hired{background:#00b894;color:white}.badge-rejected{background:#ff7675;color:white}.badge-filled{background:#00b894;color:white}.funnel{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:16px 0}.funnel-step{background:#dfe6e9;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:500}.funnel-step.active{background:#0984e3;color:white}.funnel-arrow{color:#b2bec3;font-size:18px}.transcript{background:#f8f9fa;border-radius:8px;padding:16px;margin:12px 0;max-height:400px;overflow-y:auto}.msg{margin-bottom:12px}.msg .role{font-weight:700;font-size:12px;text-transform:uppercase;margin-bottom:2px}.msg-user .role{color:#0984e3}.msg-assistant .role{color:#6c5ce7}.msg .content{font-size:14px;line-height:1.5}.briefing-result{display:inline-block;padding:4px 12px;border-radius:4px;font-weight:700;margin:8px 0}.briefing-pass{background:#e8f5e9;color:#2e7d32}.briefing-fail{background:#fce4ec;color:#c62828}.pct-bar{display:flex;align-items:center;gap:8px}.pct-bar-track{flex:1;background:#eee;height:8px;border-radius:4px;overflow:hidden;max-width:120px}.pct-bar-fill{height:100%;border-radius:4px}.yield-high .pct-bar-fill{background:#00b894}.yield-med .pct-bar-fill{background:#fdcb6e}.yield-low .pct-bar-fill{background:#ff7675}.summary-box{background:#f0f7ff;border-left:4px solid #0984e3;padding:12px 16px;border-radius:0 8px 8px 0;margin:8px 0;font-size:14px}.consultant-card{border:1px solid #eee;border-radius:8px;padding:16px;margin-bottom:12px}.consultant-card h4{margin-bottom:4px}.timestamp{color:#b2bec3;font-size:12px}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f5f6fa;
+  color: #2d3436;
+  line-height: 1.5;
+}
+
+a { color: #0984e3; text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+
+.card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.btn {
+  display: inline-block;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: opacity 0.15s;
+}
+.btn:hover { opacity: 0.85; }
+.btn-primary { background: #0984e3; color: #fff; }
+.btn-success { background: #00b894; color: #fff; }
+.btn-danger { background: #d63031; color: #fff; }
+.btn-secondary { background: #636e72; color: #fff; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.badge-submitted { background: #dfe6e9; color: #636e72; }
+.badge-screened { background: #ffeaa7; color: #636e72; }
+.badge-shortlisted { background: #81ecec; color: #00695c; }
+.badge-sent_to_manager { background: #a29bfe; color: #fff; }
+.badge-interview_scheduled { background: #74b9ff; color: #fff; }
+.badge-hired { background: #00b894; color: #fff; }
+.badge-rejected { background: #fab1a0; color: #d63031; }
+
+.badge-pending { background: #dfe6e9; color: #636e72; }
+.badge-in_progress { background: #ffeaa7; color: #636e72; }
+.badge-completed { background: #00b894; color: #fff; }
+.badge-failed { background: #fab1a0; color: #d63031; }
+
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #eee; }
+th { font-weight: 600; font-size: 12px; text-transform: uppercase; color: #636e72; }
+
+input, select, textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+textarea { min-height: 80px; resize: vertical; }
+
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-weight: 500; margin-bottom: 4px; font-size: 13px; }
+
+.flex { display: flex; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.gap-2 { gap: 8px; }
+.gap-4 { gap: 16px; }
+.mt-2 { margin-top: 8px; }
+.mt-4 { margin-top: 16px; }
+.mb-4 { margin-bottom: 16px; }
+
+h1 { font-size: 24px; font-weight: 700; }
+h2 { font-size: 20px; font-weight: 600; }
+h3 { font-size: 16px; font-weight: 600; }
+
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 13px;
+}
+.rank-1 { background: #ffd700; color: #333; }
+.rank-2 { background: #c0c0c0; color: #333; }
+.rank-3 { background: #cd7f32; color: #fff; }
+.rank-other { background: #dfe6e9; color: #636e72; }
+
+.pipeline-board {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+  overflow-x: auto;
+}
+.pipeline-column {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px;
+  min-width: 180px;
+}
+.pipeline-column h4 {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #636e72;
+  margin-bottom: 8px;
+}
+.pipeline-card {
+  background: #fff;
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+  font-size: 13px;
+}
+
+.chat-container {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 20px;
+}
+.chat-messages {
+  max-height: 500px;
+  overflow-y: auto;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+.chat-message {
+  margin-bottom: 12px;
+  display: flex;
+}
+.chat-message.user { justify-content: flex-end; }
+.chat-message .bubble {
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.chat-message.user .bubble { background: #0984e3; color: #fff; }
+.chat-message.assistant .bubble { background: #fff; border: 1px solid #ddd; }
+.chat-input { display: flex; gap: 8px; }
+.chat-input input { flex: 1; margin-bottom: 0; }
+
+
+/* Tab navigation for pages */
+.page-tabs { display: flex; background: #2d3436; padding: 0; margin: 0; position: sticky; top: 0; z-index: 100; }
+.page-tab { padding: 14px 24px; color: #b2bec3; cursor: pointer; font-size: 14px; font-weight: 500; border: none; background: none; transition: all 0.2s; }
+.page-tab:hover { color: #fff; background: rgba(255,255,255,0.05); }
+.page-tab.active { color: #74b9ff; background: rgba(116,185,255,0.1); font-weight: 600; }
+.page-content { display: none; }
+.page-content.active { display: block; }
+.app-layout { display: flex; min-height: 100vh; }
+.sidebar { width: 220px; background: #2d3436; color: #fff; padding: 20px 0; flex-shrink: 0; }
+.sidebar h2 { font-size: 18px; font-weight: 700; padding: 0 20px; margin-bottom: 30px; color: #fff; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: #b2bec3; font-size: 14px; cursor: pointer; text-decoration: none; }
+.nav-item:hover { color: #fff; background: rgba(255,255,255,0.05); text-decoration: none; }
+.nav-item.active { color: #74b9ff; font-weight: 600; background: rgba(116,185,255,0.1); }
+.main-content { flex: 1; padding: 24px; overflow-y: auto; }
+
+/* SVG icons inline */
+.icon { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 </style>
 </head>
 <body>
-<div class="header"><div class="container">
-<h1>Hiring Pipeline &mdash; Trial Run Report</h1>
-<p>End-to-end simulation: consultant ranking, CV pipeline, and pre-interview briefing gate</p>
-<p class="timestamp" style="margin-top:8px">Generated: 2026-03-13</p>
-</div></div>
-<div class="container">
+<div class="app-layout">
+<nav class="sidebar">
+  <h2>Hiring Pipeline</h2>
+  <a class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard">
+    <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Dashboard
+  </a>
+  <a class="nav-item" onclick="showPage('consultants')" id="nav-consultants">
+    <svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Consultants
+  </a>
+  <a class="nav-item" onclick="showPage('requisitions')" id="nav-requisitions">
+    <svg class="icon" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+    Requisitions
+  </a>
+  <a class="nav-item" onclick="showPage('reqdetail')" id="nav-reqdetail">
+    <svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    Req Detail
+  </a>
+  <a class="nav-item" onclick="showPage('briefing')" id="nav-briefing">
+    <svg class="icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    Briefing Chat
+  </a>
+</nav>
+<main class="main-content">
 
-<div class="section">
-<h2>Dashboard</h2>
-<div class="metrics">
-<div class="metric"><div class="value">1</div><div class="label">Requisitions</div></div>
-<div class="metric"><div class="value">10</div><div class="label">Consultants</div></div>
-<div class="metric"><div class="value">5</div><div class="label">CVs Submitted</div></div>
-<div class="metric"><div class="value">1</div><div class="label">Hired</div></div>
-<div class="metric"><div class="value">3</div><div class="label">Briefings Passed</div></div>
-<div class="metric"><div class="value">1</div><div class="label">Briefings Failed</div></div>
-<div class="metric"><div class="value">8</div><div class="label">Role Families</div></div>
-<div class="metric"><div class="value" style="color:#00b894">Filled</div><div class="label">Req Status</div></div>
+<div id="page-dashboard" class="page-content active">
+<h1 class="mb-4">Pipeline Dashboard</h1>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
+  <div class="card"><h3>Active CVs</h3><p style="font-size:32px;font-weight:700">0</p></div>
+  <div class="card"><h3>Aging Alerts</h3><p style="font-size:32px;font-weight:700;color:#00b894">0</p><p style="font-size:12px;color:#636e72">CVs stalled 3+ days</p></div>
+  <div class="card"><h3>Open Requisitions</h3><p style="font-size:32px;font-weight:700">0</p></div>
 </div>
-<h3>Hiring Funnel</h3>
-<div class="funnel">
-<div class="funnel-step active">5 Submitted</div><span class="funnel-arrow">&rarr;</span>
-<div class="funnel-step active">4 Screened</div><span class="funnel-arrow">&rarr;</span>
-<div class="funnel-step active">4 Shortlisted</div><span class="funnel-arrow">&rarr;</span>
-<div class="funnel-step active">4 Briefed (1 failed)</div><span class="funnel-arrow">&rarr;</span>
-<div class="funnel-step active">3 Sent to Manager</div><span class="funnel-arrow">&rarr;</span>
-<div class="funnel-step active">2 Interviewed</div><span class="funnel-arrow">&rarr;</span>
-<div class="funnel-step" style="background:#00b894;color:white">1 Hired</div>
+<div class="card"><h3 class="mb-4">Pipeline Funnel</h3><div style="display:flex;align-items:flex-end;gap:24px;height:200px;padding:20px 0"><div style="flex:1;text-align:center"><div style="background:#0984e3;border-radius:4px 4px 0 0;height:37px;margin:0 auto;width:60%"></div><div style="font-size:11px;margin-top:6px;color:#636e72">hired</div><div style="font-weight:600;font-size:13px">1</div></div><div style="flex:1;text-align:center"><div style="background:#0984e3;border-radius:4px 4px 0 0;height:150px;margin:0 auto;width:60%"></div><div style="font-size:11px;margin-top:6px;color:#636e72">rejected</div><div style="font-weight:600;font-size:13px">4</div></div></div></div></div>
+<div id="page-consultants" class="page-content">
+<div class="flex-between mb-4"><h1>Consultants</h1><button class="btn btn-primary" disabled>Add Consultant</button></div>
+<div class="card mb-4">
+  <h3 class="mb-4">Rankings by Role Family</h3>
+  <div style="display:flex;gap:8px;margin-bottom:16px">
+    <button class="btn btn-sm" style="background:#0984e3;color:white" onclick="document.getElementById('rank-sales').style.display='block';document.getElementById('rank-eng').style.display='none'">Sales</button>
+    <button class="btn btn-sm" style="background:#636e72;color:white" onclick="document.getElementById('rank-eng').style.display='block';document.getElementById('rank-sales').style.display='none'">Engineering</button>
+  </div>
+<div id="rank-sales" style="display:block"><table><thead><tr><th>Rank</th><th>Firm</th><th>Submissions</th><th>Submit-to-Interview</th><th>Interview-to-Offer</th><th>Overall Yield</th><th>Avg Days</th></tr></thead><tbody><tr><td><span class="rank-badge rank-1">#1</span></td><td><strong>PeopleFirst Consulting</strong><br><span style="font-size:12px;color:#636e72">Rajesh Kumar</span></td><td>21</td><td>66.7%</td><td>64.3%</td><td style="font-weight:600">38.1%</td><td>21.0</td></tr><tr><td><span class="rank-badge rank-2">#2</span></td><td><strong>BlueStar Staffing</strong><br><span style="font-size:12px;color:#636e72">Deepa Joshi</span></td><td>23</td><td>60.9%</td><td>78.6%</td><td style="font-weight:600">26.1%</td><td>29.0</td></tr><tr><td><span class="rank-badge rank-3">#3</span></td><td><strong>NexGen Talent</strong><br><span style="font-size:12px;color:#636e72">Meera Patel</span></td><td>22</td><td>90.9%</td><td>25.0%</td><td style="font-weight:600">13.6%</td><td>15.3</td></tr></tbody></table></div><div id="rank-eng" style="display:none"><table><thead><tr><th>Rank</th><th>Firm</th><th>Submissions</th><th>Submit-to-Interview</th><th>Interview-to-Offer</th><th>Overall Yield</th><th>Avg Days</th></tr></thead><tbody><tr><td><span class="rank-badge rank-1">#1</span></td><td><strong>BlueStar Staffing</strong><br><span style="font-size:12px;color:#636e72">Deepa Joshi</span></td><td>10</td><td>90.0%</td><td>66.7%</td><td style="font-weight:600">50.0%</td><td>35.6</td></tr><tr><td><span class="rank-badge rank-2">#2</span></td><td><strong>HireRight Partners</strong><br><span style="font-size:12px;color:#636e72">Anita Desai</span></td><td>20</td><td>80.0%</td><td>68.8%</td><td style="font-weight:600">50.0%</td><td>37.7</td></tr><tr><td><span class="rank-badge rank-3">#3</span></td><td><strong>Pinnacle Search</strong><br><span style="font-size:12px;color:#636e72">Kavitha Reddy</span></td><td>10</td><td>50.0%</td><td>80.0%</td><td style="font-weight:600">40.0%</td><td>35.3</td></tr><tr><td><span class="rank-badge rank-other">#4</span></td><td><strong>TalentBridge India</strong><br><span style="font-size:12px;color:#636e72">Priya Sharma</span></td><td>23</td><td>56.5%</td><td>53.8%</td><td style="font-weight:600">30.4%</td><td>33.6</td></tr><tr><td><span class="rank-badge rank-other">#5</span></td><td><strong>Apex Recruiters</strong><br><span style="font-size:12px;color:#636e72">Vikram Singh</span></td><td>8</td><td>37.5%</td><td>66.7%</td><td style="font-weight:600">25.0%</td><td>33.5</td></tr></tbody></table></div></div><div class="card"><h3 class="mb-4">All Consultants (10)</h3><table><thead><tr><th>Firm</th><th>Contact</th><th>Email</th><th>Specialties</th><th>Status</th></tr></thead><tbody><tr><td><strong>Apex Recruiters</strong></td><td>Vikram Singh</td><td>vikram@apexrecruit.in</td><td>Leadership, Product, Engineering</td><td><span class="badge badge-completed">Active</span></td></tr><tr><td><strong>BlueStar Staffing</strong></td><td>Deepa Joshi</td><td>deepa@bluestar.in</td><td>Engineering, Sales, Product</td><td><span class="badge badge-completed">Active</span></td></tr><tr><td><strong>CareerCraft Solutions</strong></td><td>Arjun Nair</td><td>arjun@careercraft.in</td><td>Operations, HR, Finance</td><td><span class="badge badge-completed">Active</span></td></tr><tr><td><strong>CoreHR Associates</strong></td><td>Suresh Menon</td><td>suresh@corehr.in</td><td>HR, Operations, Finance</td><td><span class="badge badge-completed">Active</span></td></tr><tr><td><strong>HireRight Partners</strong></td><td>Anita Desai</td><td>anita@hireright.in</td><td>Engineering, Finance</td><td><span class="badge badge-completed">Active</span></td></tr><tr><td><strong>NexGen Talent</strong></td><td>Meera Patel</td><td>meera@nexgentalent.in</td><td>Sales, Marketing</td><td><span class="badge badge-completed">Active</span></td></tr><tr><td><strong>PeopleFirst Consulting</strong></td><td>Rajesh Kumar</td><td>rajesh@peoplefirst.co.in</td><td>Sales, Marketing, Operations</td><td><span class="badge badge-completed">Active</span></td></tr><tr><td><strong>Pinnacle Search</strong></td><td>Kavitha Reddy</td><td>kavitha@pinnaclesearch.in</td><td>Leadership, Engineering</td><td><span class="badge badge-completed">Active</span></td></tr><tr><td><strong>TalentBridge India</strong></td><td>Priya Sharma</td><td>priya@talentbridge.in</td><td>Engineering, Product</td><td><span class="badge badge-completed">Active</span></td></tr><tr><td><strong>Vanguard Talent</strong></td><td>Amit Gupta</td><td>amit@vanguardtalent.in</td><td>Marketing, Product, Leadership</td><td><span class="badge badge-completed">Active</span></td></tr></tbody></table></div></div>
+<div id="page-requisitions" class="page-content">
+<div class="flex-between mb-4"><h1>Requisitions</h1><button class="btn btn-primary" disabled>New Requisition</button></div>
+<div class="card"><table><thead><tr><th>Title</th><th>Role Family</th><th>Manager</th><th>CVs</th><th>Consultants</th><th>Status</th></tr></thead><tbody>
+<tr><td><a href="#" onclick="showPage('reqdetail');return false"><strong>Senior Field Sales Engineer - Mumbai</strong></a></td><td>Sales</td><td>Nandita Krishnan</td><td>5</td><td>3</td><td><span class="badge badge-hired">filled</span></td></tr></tbody></table></div></div>
+<div id="page-reqdetail" class="page-content">
+<div class="flex-between mb-4">
+  <div><h1>Senior Field Sales Engineer - Mumbai</h1><p style="color:#636e72">Sales | Manager: Nandita Krishnan</p></div>
+  <div class="flex gap-2"><button class="btn btn-secondary" disabled>Suggest Consultants</button><button class="btn btn-primary" disabled>Submit CV</button></div>
 </div>
+<div class="card"><h3>Description</h3><p class="mt-2">Sell enterprise SaaS solutions to mid-market manufacturing companies in western India. Requires deep understanding of factory operations, ERP systems, and ability to conduct on-site technical demonstrations.</p><h3 class="mt-4">Field Expectations</h3><p class="mt-2">Minimum 60% travel across Maharashtra and Gujarat. You will spend 3-4 days/week visiting factory floors, meeting plant managers, and running live product demos. This is not a desk job — field presence is the #1 success factor.</p><p class="mt-2"><strong>Compensation:</strong> 18-24 LPA + variable</p></div><div class="card"><h3 class="mb-4">Assigned Consultants</h3><div class="flex gap-4"><div style="display:flex;align-items:center;gap:8px"><span class="rank-badge rank-1">#1</span> <span>PeopleFirst Consulting</span></div><div style="display:flex;align-items:center;gap:8px"><span class="rank-badge rank-2">#2</span> <span>BlueStar Staffing</span></div><div style="display:flex;align-items:center;gap:8px"><span class="rank-badge rank-3">#3</span> <span>NexGen Talent</span></div></div></div><div class="card"><div class="flex-between mb-4"><h3>CV Pipeline (5)</h3></div><div class="pipeline-board"><div class="pipeline-column"><h4>Submitted (0)</h4></div><div class="pipeline-column"><h4>Screened (0)</h4></div><div class="pipeline-column"><h4>Shortlisted (0)</h4></div><div class="pipeline-column"><h4>Sent to Manager (0)</h4></div><div class="pipeline-column"><h4>Interview (0)</h4></div><div class="pipeline-column"><h4>Hired (1)</h4><div class="pipeline-card"><strong>Fatima Sheikh</strong><div style="font-size:11px;color:#636e72;margin-top:2px">BlueStar Staffing</div><div style="margin-top:4px"><span class="badge badge-completed">Passed</span></div></div></div></div></div><div class="card"><h3 class="mb-4">Rejected Candidates</h3><table><thead><tr><th>Candidate</th><th>Consultant</th><th>Briefing</th><th>Reason</th></tr></thead><tbody><tr><td><strong>Aditya Rao</strong></td><td>NexGen Talent</td><td><span class="badge badge-pending">N/A</span></td><td style="font-size:13px;color:#636e72">Compensation expectations (30+ LPA) exceed budget (18-24 LPA). Candidate unwilling to negotiate per consultant feedback.</td></tr><tr><td><strong>Karan Bhatt</strong></td><td>BlueStar Staffing</td><td><span class="badge badge-failed">Failed</span></td><td style="font-size:13px;color:#636e72">Failed pre-interview briefing: candidate cannot meet 60% travel requirement due to family commitments.</td></tr><tr><td><strong>Sneha Iyer</strong></td><td>PeopleFirst Consulting</td><td><span class="badge badge-completed">Passed</span></td><td style="font-size:13px;color:#636e72">Manager feedback: IoT sales background is too far from ERP/SaaS integration sales. Prefers candidates with direct ERP ecosystem experience.</td></tr><tr><td><strong>Rohit Malhotra</strong></td><td>PeopleFirst Consulting</td><td><span class="badge badge-completed">Passed</span></td><td style="font-size:13px;color:#636e72">Candidate declined after receiving counter-offer from current employer (Siemens). Could not match retention package.</td></tr></tbody></table></div></div><div id="page-briefing" class="page-content"><div style="display:flex;gap:8px;margin-bottom:16px;justify-content:center"><button class="btn btn-sm" style="background:#0984e3;color:white" onclick="showBriefing(0)">&#x2705; Rohit Malhotra</button><button class="btn btn-sm" onclick="showBriefing(1)">&#x2705; Sneha Iyer</button><button class="btn btn-sm" onclick="showBriefing(2)">&#x274C; Karan Bhatt</button><button class="btn btn-sm" onclick="showBriefing(3)">&#x2705; Fatima Sheikh</button></div><div id="briefing-0" style="display:block"><div style="max-width:700px;margin:0 auto 30px"><div style="text-align:center;margin-bottom:20px"><h2>Pre-Interview Briefing</h2><p style="color:#636e72">Role: <strong>Senior Field Sales Engineer - Mumbai</strong></p><p style="font-size:13px;color:#636e72">Hi Rohit Malhotra, this conversation will help you understand the role before your interview.</p></div><div class="card" style="text-align:center;margin-bottom:16px"><h3>Briefing Complete</h3><p style="color:#636e72;margin-top:4px">Rohit demonstrates strong understanding of the role requirements. His current experience at Siemens is directly relevant — he already works in factory environments with manufacturing clients. He is comfortable with the travel requirements and sees the autonomous territory management as a positive. Recommended to proceed to manager interview.</p><p class="mt-2" style="color:#00b894;font-weight:600">You're all set for the interview stage.</p></div><div class="chat-messages"><div class="chat-message user"><div class="bubble">Hi, I&#x27;m Rohit. I&#x27;d like to learn more about the Senior Field Sales Engineer role.</div></div><div class="chat-message assistant"><div class="bubble">Welcome Rohit! This role involves selling enterprise SaaS to mid-market manufacturing companies in western India. You&#x27;d spend 60% of your time traveling across Maharashtra and Gujarat, visiting factory floors and running live demos. The team is 5 field engineers reporting to VP Sales West. Compensation is 18-24 LPA plus variable. Does this align with what you were expecting?</div></div><div class="chat-message user"><div class="bubble">Yes, absolutely. I&#x27;m currently at Siemens doing similar work — visiting plants, meeting production managers. 60% travel is actually less than what I do now. I&#x27;m comfortable with factory environments and know the Maharashtra industrial belt well.</div></div><div class="chat-message assistant"><div class="bubble">Great to hear! One key point — this role requires autonomous territory management. You&#x27;ll own your pipeline end-to-end, from prospecting to demo to close. The average deal size is around 20L ARR. Are you comfortable with that level of autonomy?</div></div><div class="chat-message user"><div class="bubble">That&#x27;s exactly why I&#x27;m interested. At Siemens, I share territories and it limits my ability to build deep customer relationships. I want to own my territory fully. 20L ARR deals are slightly smaller than what I&#x27;m used to but the volume should compensate. I&#x27;m ready for the interview.</div></div></div></div></div><div id="briefing-1" style="display:none"><div style="max-width:700px;margin:0 auto 30px"><div style="text-align:center;margin-bottom:20px"><h2>Pre-Interview Briefing</h2><p style="color:#636e72">Role: <strong>Senior Field Sales Engineer - Mumbai</strong></p><p style="font-size:13px;color:#636e72">Hi Sneha Iyer, this conversation will help you understand the role before your interview.</p></div><div class="card" style="text-align:center;margin-bottom:16px"><h3>Briefing Complete</h3><p style="color:#636e72;margin-top:4px">Sneha has strong relevant experience in IoT sales to manufacturing companies. She asked thoughtful questions about ERP integration, showing genuine product interest. Comfortable with travel and compensation. Good candidate for manager interview.</p><p class="mt-2" style="color:#00b894;font-weight:600">You're all set for the interview stage.</p></div><div class="chat-messages"><div class="chat-message user"><div class="bubble">Hello! I&#x27;m Sneha. I was told this role involves field sales for manufacturing companies?</div></div><div class="chat-message assistant"><div class="bubble">That&#x27;s right, Sneha. The role is Senior Field Sales Engineer based in Mumbai, selling enterprise SaaS solutions to mid-market manufacturing companies. The work is heavily field-oriented — 60% travel across Maharashtra and Gujarat, visiting factory floors and conducting live product demos. Does this match your understanding?</div></div><div class="chat-message user"><div class="bubble">Yes, I sell IoT solutions to similar companies in Pune-Nashik. I&#x27;m used to visiting plants and speaking with production line managers. I&#x27;m curious about the ERP integration angle — my current product sits alongside ERPs but doesn&#x27;t go deep. Is this a full ERP replacement or a complementary tool?</div></div><div class="chat-message assistant"><div class="bubble">Great question. It&#x27;s complementary — the product integrates with existing ERPs (SAP, Oracle) rather than replacing them. Your IoT background could be very relevant here since many manufacturing clients are looking at IoT + ERP convergence. The compensation range is 18-24 LPA plus variable. Any concerns about that or the travel requirements?</div></div><div class="chat-message user"><div class="bubble">The comp range works for me, and the travel is fine — I&#x27;m already doing 50% travel. I&#x27;d love to discuss more about the product roadmap and customer base with the hiring manager. I&#x27;m ready.</div></div></div></div></div><div id="briefing-2" style="display:none"><div style="max-width:700px;margin:0 auto 30px"><div style="text-align:center;margin-bottom:20px"><h2>Pre-Interview Briefing</h2><p style="color:#636e72">Role: <strong>Senior Field Sales Engineer - Mumbai</strong></p><p style="font-size:13px;color:#636e72">Hi Karan Bhatt, this conversation will help you understand the role before your interview.</p></div><div class="card" style="text-align:center;margin-bottom:16px"><h3 style="color:#d63031">Briefing Review Needed</h3><p style="color:#636e72;margin-top:4px">Karan expressed significant concern about the 60% travel requirement. He is currently doing 30% travel and has family commitments that make 60% difficult. He was transparent about the mismatch. Recommend not proceeding — this would likely result in early attrition if the travel expectations aren&#x27;t genuinely accepted.</p></div><div class="chat-messages"><div class="chat-message user"><div class="bubble">Hi, I&#x27;m Karan. I want to understand what the day-to-day looks like for this role.</div></div><div class="chat-message assistant"><div class="bubble">Hi Karan! Day-to-day, you&#x27;d spend 3-4 days per week visiting manufacturing plants across Maharashtra and Gujarat. You&#x27;ll meet plant managers, conduct live technical demonstrations of the SaaS platform, and manage your sales pipeline end-to-end. It&#x27;s a highly field-oriented role — 60% minimum travel. On non-travel days, you&#x27;d be at the Mumbai office doing pipeline management, follow-ups, and preparing proposals.</div></div><div class="chat-message user"><div class="bubble">That&#x27;s quite a lot of travel. I&#x27;m currently at SAP and do about 30% travel, which I find manageable. 60% is double that. I have a young family and was hoping this role would be more balanced. Is there flexibility on the travel requirement?</div></div><div class="chat-message assistant"><div class="bubble">I understand the concern. The 60% travel is a core requirement of this role — field presence is the #1 success factor according to the hiring team. The manufacturing clients expect on-site visits for demos and relationship building. It would be difficult to be successful in this role with significantly less travel. Would this be a dealbreaker for you?</div></div><div class="chat-message user"><div class="bubble">Honestly, I need to think about it. I was hoping for maybe 40% travel. I don&#x27;t think I can commit to 60% with my current family situation. Maybe this isn&#x27;t the right fit timing-wise.</div></div></div></div></div><div id="briefing-3" style="display:none"><div style="max-width:700px;margin:0 auto 30px"><div style="text-align:center;margin-bottom:20px"><h2>Pre-Interview Briefing</h2><p style="color:#636e72">Role: <strong>Senior Field Sales Engineer - Mumbai</strong></p><p style="font-size:13px;color:#636e72">Hi Fatima Sheikh, this conversation will help you understand the role before your interview.</p></div><div class="card" style="text-align:center;margin-bottom:16px"><h3>Briefing Complete</h3><p style="color:#636e72;margin-top:4px">Fatima has a unique and highly relevant combination of manufacturing engineering and SaaS sales experience. She showed enthusiasm for the field-oriented nature of the role, has no concerns about travel, and her motivation for switching from FMCG to manufacturing is clear and genuine. Strong candidate for manager interview.</p><p class="mt-2" style="color:#00b894;font-weight:600">You're all set for the interview stage.</p></div><div class="chat-messages"><div class="chat-message user"><div class="bubble">Hi, I&#x27;m Fatima. I have a background in both manufacturing engineering and SaaS sales. I&#x27;d like to understand how this role leverages both.</div></div><div class="chat-message assistant"><div class="bubble">Fatima, your background sounds like an excellent fit! This role requires explaining complex SaaS solutions to manufacturing plant managers and engineers. You&#x27;d visit factories, understand their production workflows, and demonstrate how the platform integrates with their existing ERP systems. Your engineering background means you can speak their language on the factory floor, while your sales experience helps you close deals. The role involves 60% travel across Maharashtra and Gujarat.</div></div><div class="chat-message user"><div class="bubble">That sounds like exactly what I want to do. I spent 2 years as a manufacturing engineer at L&amp;T before moving to SaaS sales, so I know what it&#x27;s like to work on a factory floor. The 60% travel is fine — I actually enjoy site visits more than desk work. What&#x27;s the team dynamic like?</div></div><div class="chat-message assistant"><div class="bubble">The team is 5 field engineers reporting to VP Sales (West). It&#x27;s collaborative but each person manages their territory autonomously. Average deal size is 20L ARR. Compensation is 18-24 LPA plus variable. The culture values initiative — you&#x27;re expected to own your pipeline end-to-end. Does all of this align with what you&#x27;re looking for?</div></div><div class="chat-message user"><div class="bubble">Yes, completely. I&#x27;m currently selling FMCG SaaS and want to get back to manufacturing. The comp range, the autonomy, and the factory-floor interactions — it all resonates. I&#x27;m confident and ready for the next step.</div></div></div></div></div></div>
+</main>
 </div>
-
-<div class="section">
-<h2>Requisition: Senior Field Sales Engineer - Mumbai</h2>
-<table>
-<tr><td style="width:180px;font-weight:600">Status</td><td><span class="badge badge-filled">filled</span></td></tr>
-<tr><td style="font-weight:600">Hiring Manager</td><td>Nandita Krishnan (nandita.k@company.in)</td></tr>
-<tr><td style="font-weight:600">Role Family</td><td>Sales</td></tr>
-<tr><td style="font-weight:600">Compensation</td><td>18-24 LPA + variable</td></tr>
-<tr><td style="font-weight:600">Description</td><td>Sell enterprise SaaS solutions to mid-market manufacturing companies in western India. Requires deep understanding of factory operations, ERP systems, and ability to conduct on-site technical demonstrations.</td></tr>
-<tr><td style="font-weight:600">Field Expectations</td><td>Minimum 60% travel across Maharashtra and Gujarat. You will spend 3-4 days/week visiting factory floors, meeting plant managers, and running live product demos. This is not a desk job — field presence is the #1 success factor.</td></tr>
-<tr><td style="font-weight:600">Team Info</td><td>Reports to VP Sales (West). Team of 5 field engineers. Collaborative culture but autonomous territory management. Average deal size: 20L ARR.</td></tr>
-</table>
-</div>
-
-<div class="section"><h2>Consultant Rankings (Yield-Based)</h2>
-<h3>Sales</h3><table><thead><tr><th>Rank</th><th>Consultant</th><th>Subs</th><th>S&rarr;I</th><th>I&rarr;O</th><th>O&rarr;A</th><th>Overall Yield</th><th>Avg TTF</th></tr></thead><tbody><tr><td>&#x1F947; #1</td><td><strong>PeopleFirst Consulting</strong><br><span style="color:#636e72;font-size:12px">Rajesh Kumar</span></td><td>21</td><td>66.7%</td><td>64.3%</td><td>88.9%</td><td class="yield-high"><div class="pct-bar"><div class="pct-bar-track"><div class="pct-bar-fill" style="width:38.1%"></div></div>38.1%</div></td><td>21.0d</td></tr><tr><td>&#x1F948; #2</td><td><strong>BlueStar Staffing</strong><br><span style="color:#636e72;font-size:12px">Deepa Joshi</span></td><td>23</td><td>60.9%</td><td>78.6%</td><td>54.5%</td><td class="yield-med"><div class="pct-bar"><div class="pct-bar-track"><div class="pct-bar-fill" style="width:26.1%"></div></div>26.1%</div></td><td>29.0d</td></tr><tr><td>&#x1F949; #3</td><td><strong>NexGen Talent</strong><br><span style="color:#636e72;font-size:12px">Meera Patel</span></td><td>22</td><td>90.9%</td><td>25.0%</td><td>60.0%</td><td class="yield-low"><div class="pct-bar"><div class="pct-bar-track"><div class="pct-bar-fill" style="width:13.6%"></div></div>13.6%</div></td><td>15.3d</td></tr></tbody></table>
-<h3>Engineering</h3><table><thead><tr><th>Rank</th><th>Consultant</th><th>Subs</th><th>S&rarr;I</th><th>I&rarr;O</th><th>O&rarr;A</th><th>Overall Yield</th><th>Avg TTF</th></tr></thead><tbody><tr><td>&#x1F947; #1</td><td><strong>BlueStar Staffing</strong><br><span style="color:#636e72;font-size:12px">Deepa Joshi</span></td><td>10</td><td>90.0%</td><td>66.7%</td><td>83.3%</td><td class="yield-high"><div class="pct-bar"><div class="pct-bar-track"><div class="pct-bar-fill" style="width:50.0%"></div></div>50.0%</div></td><td>35.6d</td></tr><tr><td>&#x1F948; #2</td><td><strong>HireRight Partners</strong><br><span style="color:#636e72;font-size:12px">Anita Desai</span></td><td>20</td><td>80.0%</td><td>68.8%</td><td>90.9%</td><td class="yield-high"><div class="pct-bar"><div class="pct-bar-track"><div class="pct-bar-fill" style="width:50.0%"></div></div>50.0%</div></td><td>37.7d</td></tr><tr><td>&#x1F949; #3</td><td><strong>Pinnacle Search</strong><br><span style="color:#636e72;font-size:12px">Kavitha Reddy</span></td><td>10</td><td>50.0%</td><td>80.0%</td><td>100.0%</td><td class="yield-high"><div class="pct-bar"><div class="pct-bar-track"><div class="pct-bar-fill" style="width:40.0%"></div></div>40.0%</div></td><td>35.3d</td></tr><tr><td> #4</td><td><strong>TalentBridge India</strong><br><span style="color:#636e72;font-size:12px">Priya Sharma</span></td><td>23</td><td>56.5%</td><td>53.8%</td><td>100.0%</td><td class="yield-med"><div class="pct-bar"><div class="pct-bar-track"><div class="pct-bar-fill" style="width:30.4%"></div></div>30.4%</div></td><td>33.6d</td></tr><tr><td> #5</td><td><strong>Apex Recruiters</strong><br><span style="color:#636e72;font-size:12px">Vikram Singh</span></td><td>8</td><td>37.5%</td><td>66.7%</td><td>100.0%</td><td class="yield-med"><div class="pct-bar"><div class="pct-bar-track"><div class="pct-bar-fill" style="width:25.0%"></div></div>25.0%</div></td><td>33.5d</td></tr></tbody></table>
-</div>
-
-<div class="section"><h2>CV Submissions</h2>
-<table><thead><tr><th>Candidate</th><th>Consultant</th><th>Status</th><th>Rejection Reason</th></tr></thead><tbody><tr><td><strong>Aditya Rao</strong></td><td>NexGen Talent</td><td><span class="badge badge-rejected">rejected</span></td><td style="font-size:13px;color:#636e72">Compensation expectations (30+ LPA) exceed budget (18-24 LPA). Candidate unwilling to negotiate per consultant feedback.</td></tr><tr><td><strong>Fatima Sheikh</strong></td><td>BlueStar Staffing</td><td><span class="badge badge-hired">hired</span></td><td style="font-size:13px;color:#636e72">—</td></tr><tr><td><strong>Karan Bhatt</strong></td><td>BlueStar Staffing</td><td><span class="badge badge-rejected">rejected</span></td><td style="font-size:13px;color:#636e72">Failed pre-interview briefing: candidate cannot meet 60% travel requirement due to family commitments.</td></tr><tr><td><strong>Sneha Iyer</strong></td><td>PeopleFirst Consulting</td><td><span class="badge badge-rejected">rejected</span></td><td style="font-size:13px;color:#636e72">Manager feedback: IoT sales background is too far from ERP/SaaS integration sales. Prefers candidates with direct ERP ecosystem experience.</td></tr><tr><td><strong>Rohit Malhotra</strong></td><td>PeopleFirst Consulting</td><td><span class="badge badge-rejected">rejected</span></td><td style="font-size:13px;color:#636e72">Candidate declined after receiving counter-offer from current employer (Siemens). Could not match retention package.</td></tr></tbody></table>
-</div>
-
-<div class="section"><h2>Pre-Interview Briefings</h2><div class="consultant-card"><h4>Rohit</h4><span class="briefing-result briefing-pass">PASSED</span><span class="timestamp" style="margin-left:12px">Token: c02cfe94...</span><div class="summary-box">Rohit demonstrates strong understanding of the role requirements. His current experience at Siemens is directly relevant — he already works in factory environments with manufacturing clients. He is comfortable with the travel requirements and sees the autonomous territory management as a positive. Recommended to proceed to manager interview.</div><div class="transcript"><div class="msg msg-user"><div class="role">Candidate</div><div class="content">Hi, I'm Rohit. I'd like to learn more about the Senior Field Sales Engineer role.</div></div><div class="msg msg-assistant"><div class="role">Assistant</div><div class="content">Welcome Rohit! This role involves selling enterprise SaaS to mid-market manufacturing companies in western India. You'd spend 60% of your time traveling across Maharashtra and Gujarat, visiting factory floors and running live demos. The team is 5 field engineers reporting to VP Sales West. Compensation is 18-24 LPA plus variable. Does this align with what you were expecting?</div></div><div class="msg msg-user"><div class="role">Candidate</div><div class="content">Yes, absolutely. I'm currently at Siemens doing similar work — visiting plants, meeting production managers. 60% travel is actually less than what I do now. I'm comfortable with factory environments and know the Maharashtra industrial belt well.</div></div><div class="msg msg-assistant"><div class="role">Assistant</div><div class="content">Great to hear! One key point — this role requires autonomous territory management. You'll own your pipeline end-to-end, from prospecting to demo to close. The average deal size is around 20L ARR. Are you comfortable with that level of autonomy?</div></div><div class="msg msg-user"><div class="role">Candidate</div><div class="content">That's exactly why I'm interested. At Siemens, I share territories and it limits my ability to build deep customer relationships. I want to own my territory fully. 20L ARR deals are slightly smaller than what I'm used to but the volume should compensate. I'm ready for the interview.</div></div></div></div><div class="consultant-card"><h4>Sneha</h4><span class="briefing-result briefing-pass">PASSED</span><span class="timestamp" style="margin-left:12px">Token: 0bd0beb9...</span><div class="summary-box">Sneha has strong relevant experience in IoT sales to manufacturing companies. She asked thoughtful questions about ERP integration, showing genuine product interest. Comfortable with travel and compensation. Good candidate for manager interview.</div><div class="transcript"><div class="msg msg-user"><div class="role">Candidate</div><div class="content">Hello! I'm Sneha. I was told this role involves field sales for manufacturing companies?</div></div><div class="msg msg-assistant"><div class="role">Assistant</div><div class="content">That's right, Sneha. The role is Senior Field Sales Engineer based in Mumbai, selling enterprise SaaS solutions to mid-market manufacturing companies. The work is heavily field-oriented — 60% travel across Maharashtra and Gujarat, visiting factory floors and conducting live product demos. Does this match your understanding?</div></div><div class="msg msg-user"><div class="role">Candidate</div><div class="content">Yes, I sell IoT solutions to similar companies in Pune-Nashik. I'm used to visiting plants and speaking with production line managers. I'm curious about the ERP integration angle — my current product sits alongside ERPs but doesn't go deep. Is this a full ERP replacement or a complementary tool?</div></div><div class="msg msg-assistant"><div class="role">Assistant</div><div class="content">Great question. It's complementary — the product integrates with existing ERPs (SAP, Oracle) rather than replacing them. Your IoT background could be very relevant here since many manufacturing clients are looking at IoT + ERP convergence. The compensation range is 18-24 LPA plus variable. Any concerns about that or the travel requirements?</div></div><div class="msg msg-user"><div class="role">Candidate</div><div class="content">The comp range works for me, and the travel is fine — I'm already doing 50% travel. I'd love to discuss more about the product roadmap and customer base with the hiring manager. I'm ready.</div></div></div></div><div class="consultant-card"><h4>Karan</h4><span class="briefing-result briefing-fail">FAILED</span><span class="timestamp" style="margin-left:12px">Token: 6ce528c9...</span><div class="summary-box">Karan expressed significant concern about the 60% travel requirement. He is currently doing 30% travel and has family commitments that make 60% difficult. He was transparent about the mismatch. Recommend not proceeding — this would likely result in early attrition if the travel expectations aren't genuinely accepted.</div><div class="transcript"><div class="msg msg-user"><div class="role">Candidate</div><div class="content">Hi, I'm Karan. I want to understand what the day-to-day looks like for this role.</div></div><div class="msg msg-assistant"><div class="role">Assistant</div><div class="content">Hi Karan! Day-to-day, you'd spend 3-4 days per week visiting manufacturing plants across Maharashtra and Gujarat. You'll meet plant managers, conduct live technical demonstrations of the SaaS platform, and manage your sales pipeline end-to-end. It's a highly field-oriented role — 60% minimum travel. On non-travel days, you'd be at the Mumbai office doing pipeline management, follow-ups, and preparing proposals.</div></div><div class="msg msg-user"><div class="role">Candidate</div><div class="content">That's quite a lot of travel. I'm currently at SAP and do about 30% travel, which I find manageable. 60% is double that. I have a young family and was hoping this role would be more balanced. Is there flexibility on the travel requirement?</div></div><div class="msg msg-assistant"><div class="role">Assistant</div><div class="content">I understand the concern. The 60% travel is a core requirement of this role — field presence is the #1 success factor according to the hiring team. The manufacturing clients expect on-site visits for demos and relationship building. It would be difficult to be successful in this role with significantly less travel. Would this be a dealbreaker for you?</div></div><div class="msg msg-user"><div class="role">Candidate</div><div class="content">Honestly, I need to think about it. I was hoping for maybe 40% travel. I don't think I can commit to 60% with my current family situation. Maybe this isn't the right fit timing-wise.</div></div></div></div><div class="consultant-card"><h4>Fatima</h4><span class="briefing-result briefing-pass">PASSED</span><span class="timestamp" style="margin-left:12px">Token: 364832a4...</span><div class="summary-box">Fatima has a unique and highly relevant combination of manufacturing engineering and SaaS sales experience. She showed enthusiasm for the field-oriented nature of the role, has no concerns about travel, and her motivation for switching from FMCG to manufacturing is clear and genuine. Strong candidate for manager interview.</div><div class="transcript"><div class="msg msg-user"><div class="role">Candidate</div><div class="content">Hi, I'm Fatima. I have a background in both manufacturing engineering and SaaS sales. I'd like to understand how this role leverages both.</div></div><div class="msg msg-assistant"><div class="role">Assistant</div><div class="content">Fatima, your background sounds like an excellent fit! This role requires explaining complex SaaS solutions to manufacturing plant managers and engineers. You'd visit factories, understand their production workflows, and demonstrate how the platform integrates with their existing ERP systems. Your engineering background means you can speak their language on the factory floor, while your sales experience helps you close deals. The role involves 60% travel across Maharashtra and Gujarat.</div></div><div class="msg msg-user"><div class="role">Candidate</div><div class="content">That sounds like exactly what I want to do. I spent 2 years as a manufacturing engineer at L&T before moving to SaaS sales, so I know what it's like to work on a factory floor. The 60% travel is fine — I actually enjoy site visits more than desk work. What's the team dynamic like?</div></div><div class="msg msg-assistant"><div class="role">Assistant</div><div class="content">The team is 5 field engineers reporting to VP Sales (West). It's collaborative but each person manages their territory autonomously. Average deal size is 20L ARR. Compensation is 18-24 LPA plus variable. The culture values initiative — you're expected to own your pipeline end-to-end. Does all of this align with what you're looking for?</div></div><div class="msg msg-user"><div class="role">Candidate</div><div class="content">Yes, completely. I'm currently selling FMCG SaaS and want to get back to manufacturing. The comp range, the autonomy, and the factory-floor interactions — it all resonates. I'm confident and ready for the next step.</div></div></div></div></div>
-
-<div class="section"><h2>All Consultants</h2>
-<table><thead><tr><th>Firm</th><th>Contact</th><th>Email</th><th>Phone</th><th>Active</th></tr></thead><tbody><tr><td><strong>Apex Recruiters</strong></td><td>Vikram Singh</td><td>vikram@apexrecruit.in</td><td>+91-9876543213</td><td>Yes</td></tr><tr><td><strong>BlueStar Staffing</strong></td><td>Deepa Joshi</td><td>deepa@bluestar.in</td><td>+91-9876543218</td><td>Yes</td></tr><tr><td><strong>CareerCraft Solutions</strong></td><td>Arjun Nair</td><td>arjun@careercraft.in</td><td>+91-9876543215</td><td>Yes</td></tr><tr><td><strong>CoreHR Associates</strong></td><td>Suresh Menon</td><td>suresh@corehr.in</td><td>+91-9876543217</td><td>Yes</td></tr><tr><td><strong>HireRight Partners</strong></td><td>Anita Desai</td><td>anita@hireright.in</td><td>+91-9876543212</td><td>Yes</td></tr><tr><td><strong>NexGen Talent</strong></td><td>Meera Patel</td><td>meera@nexgentalent.in</td><td>+91-9876543214</td><td>Yes</td></tr><tr><td><strong>PeopleFirst Consulting</strong></td><td>Rajesh Kumar</td><td>rajesh@peoplefirst.co.in</td><td>+91-9876543211</td><td>Yes</td></tr><tr><td><strong>Pinnacle Search</strong></td><td>Kavitha Reddy</td><td>kavitha@pinnaclesearch.in</td><td>+91-9876543216</td><td>Yes</td></tr><tr><td><strong>TalentBridge India</strong></td><td>Priya Sharma</td><td>priya@talentbridge.in</td><td>+91-9876543210</td><td>Yes</td></tr><tr><td><strong>Vanguard Talent</strong></td><td>Amit Gupta</td><td>amit@vanguardtalent.in</td><td>+91-9876543219</td><td>Yes</td></tr></tbody></table>
-</div>
-
-<div class="section"><h2>Role Families</h2>
-<div style="display:flex;flex-wrap:wrap;gap:8px"><div style="background:#dfe6e9;padding:8px 16px;border-radius:20px;font-size:14px;font-weight:500">Engineering</div><div style="background:#dfe6e9;padding:8px 16px;border-radius:20px;font-size:14px;font-weight:500">Finance</div><div style="background:#dfe6e9;padding:8px 16px;border-radius:20px;font-size:14px;font-weight:500">HR</div><div style="background:#dfe6e9;padding:8px 16px;border-radius:20px;font-size:14px;font-weight:500">Leadership</div><div style="background:#dfe6e9;padding:8px 16px;border-radius:20px;font-size:14px;font-weight:500">Marketing</div><div style="background:#dfe6e9;padding:8px 16px;border-radius:20px;font-size:14px;font-weight:500">Operations</div><div style="background:#dfe6e9;padding:8px 16px;border-radius:20px;font-size:14px;font-weight:500">Product</div><div style="background:#dfe6e9;padding:8px 16px;border-radius:20px;font-size:14px;font-weight:500">Sales</div></div>
-</div>
-
-</div>
-<div style="text-align:center;padding:24px;color:#b2bec3;font-size:12px">Hiring Pipeline Trial Run Report &mdash; Generated by simulate-pipeline.js</div>
-</body></html>
+<script>
+function showPage(id) {
+  document.querySelectorAll('.page-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.getElementById('nav-' + id).classList.add('active');
+}
+function showBriefing(idx) {
+  document.querySelectorAll('[id^="briefing-"]').forEach(el => el.style.display = 'none');
+  document.getElementById('briefing-' + idx).style.display = 'block';
+  var btns = document.querySelectorAll('#page-briefing .btn-sm');
+  btns.forEach((b,i) => { b.style.background = i===idx ? '#0984e3' : '#636e72'; b.style.color = 'white'; });
+}
+</script>
+</body>
+</html>
