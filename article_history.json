@@ -1,84 +1,31 @@
 {
   "2026-03-13": {
-    "run_at": "2026-03-13T14:17:56",
-    "teaser": "Today's collection reveals the hidden machinery behind our digital age, from the industrial-scale data harvesting powering AI's next frontier to intimate human stories that transcend technology. We're diving into corporate secrets, sporting legends, and the complex relationship between innovation and sovereignty. These pieces offer rare glimpses behind the curtain of how the future gets built — and who gets to decide its direction.",
+    "run_at": "2026-03-13T14:36:03",
+    "teaser": "The AI sovereignty debate takes a sharp turn as India's tech landscape grapples with fundamental questions about independence versus openness. Today's pick cuts through the noise around one of the country's most watched AI startups, challenging conventional wisdom about what it means to build truly sovereign technology. The analysis reveals uncomfortable truths about the gap between marketing narratives and technical realities. It's a reminder that in the race for AI dominance, the loudest claims about independence often mask the deepest dependencies. For anyone tracking the global AI power game, this is essential reading.",
     "included": [
       {
         "rank": 1,
-        "title": "Nvidia's Massive AI Scraping Operation Revealed",
-        "url": "https://www.404media.co/nvidia-ai-scraping-foundational-model-cosmos-project/",
-        "source": "404 Media via X Bookmark",
-        "score": 8.0,
-        "scores": {
-          "originality": 9.0,
-          "real_world_impact": 8.0,
-          "writing_quality": 8.0,
-          "interestingness": 7.0
-        },
-        "summary": "A leaked investigation reveals the staggering scale of Nvidia's AI training data collection through their Cosmos project. Internal Slack messages and documents show the company is scraping 80 years worth of video content daily — described internally as 'a human lifetime' of footage — to train their foundational AI models. The revelations expose how tech giants operate massive data harvesting operations despite internal legal and ethical concerns raised by staff members. The project received approval from Nvidia's highest levels of management, highlighting the corporate prioritization of AI advancement over privacy considerations. This investigation provides rare insight into the industrial-scale data collection that powers modern AI development, revealing the vast resources and questionable practices behind seemingly effortless AI capabilities. The story underscores growing tensions between rapid AI progress and ethical data use, as companies race to train more powerful models while navigating murky legal territories around content scraping. The leaked documents offer a window into how major tech corporations balance competitive advantage against potential legal and ethical risks in their pursuit of AI dominance.",
-        "tags": [
-          "AI",
-          "data privacy",
-          "Nvidia",
-          "corporate ethics",
-          "machine learning"
-        ],
-        "source_type": "x"
-      },
-      {
-        "rank": 2,
-        "title": "Sarvam: Open is Not Sovereign",
+        "title": "Sarvam. Open is not sovereign",
         "url": "https://mtrajan.substack.com/p/sarvam-open-is-not-sovereign",
-        "source": "Thiyagarajan Maruthavanan via X Like",
-        "score": 7.5,
+        "source": "X Like from Thiyagarajan Maruthavanan",
+        "score": 7.8,
         "scores": {
           "originality": 8.0,
           "real_world_impact": 8.0,
           "writing_quality": 7.0,
-          "interestingness": 7.0
-        },
-        "summary": "This analysis examines the complex relationship between open-source AI development and technological sovereignty, using Sarvam AI as a case study. The piece challenges the common assumption that open-source automatically equals independence, arguing that true sovereignty requires more than just access to code and models. The author explores how dependency on foreign infrastructure, data, and talent can undermine claims of technological independence, even when using ostensibly 'open' systems. The argument delves into the nuanced reality of AI development, where sovereignty involves control over the entire stack — from hardware and cloud infrastructure to training data and specialized expertise. The piece highlights how countries and companies can fall into a false sense of security by adopting open-source solutions while remaining fundamentally dependent on foreign ecosystems. This perspective is particularly relevant as nations worldwide grapple with AI strategy and seek to balance openness with strategic autonomy. The analysis provides valuable insights for policymakers and technologists who must navigate the tension between leveraging global open-source innovations and maintaining meaningful control over critical AI capabilities. The piece contributes to broader debates about technology policy, digital sovereignty, and the true meaning of independence in an interconnected world.",
-        "tags": [
-          "AI sovereignty",
-          "open source",
-          "technology policy",
-          "digital independence",
-          "geopolitics"
-        ],
-        "source_type": "x"
-      },
-      {
-        "rank": 3,
-        "title": "Chris Evert and Martina Navratilova: A Story of Friendship Through Cancer",
-        "url": "https://washingtonpost.com/sports/interactive/2023/chris-evert-martina-navratilova-cancer/",
-        "source": "Washington Post via X Bookmark",
-        "score": 7.3,
-        "scores": {
-          "originality": 7.0,
-          "real_world_impact": 6.0,
-          "writing_quality": 9.0,
           "interestingness": 8.0
         },
-        "summary": "This deeply moving piece chronicles the parallel cancer journeys of tennis legends Chris Evert and Martina Navratilova, transforming their historic rivalry into a profound story of friendship and mutual support. The interactive feature details how both champions faced their diagnoses around the same time, drawing strength from each other despite their competitive past. Evert's ovarian cancer and Navratilova's throat and breast cancer battles are woven together in a narrative that transcends sports, exploring themes of vulnerability, courage, and human connection. The story reveals intimate details about their treatment experiences, fears, and the way their shared ordeal deepened their relationship beyond their famous on-court competition. Through candid interviews and personal reflections, the piece shows how two fierce competitors became each other's most important allies in fighting for their lives. The writing combines the drama of their tennis careers with the raw reality of cancer treatment, creating a powerful meditation on legacy, friendship, and what truly matters when facing mortality. The interactive format allows readers to experience their journey through multimedia elements, making their story more immediate and emotionally resonant. This piece stands out for its ability to find hope and beauty in the midst of serious illness while honoring the complexity of lifelong relationships.",
+        "summary": "This analysis dissects Sarvam AI, one of India's prominent AI startups, challenging its claims of building sovereign AI technology. The author argues that despite Sarvam's positioning as an Indian AI company focused on local languages and cultural context, its fundamental architecture relies heavily on Western open-source models and infrastructure. The piece explores the tension between 'open' AI development and true technological sovereignty, suggesting that building on open-source foundations from foreign entities doesn't constitute genuine independence. The analysis delves into the technical dependencies that undermine sovereignty claims, from base models to training infrastructure. It raises critical questions about what authentic AI sovereignty looks like in practice versus marketing rhetoric. The author contends that true sovereignty requires building foundational capabilities from the ground up, not just fine-tuning existing Western models for local use cases. This critique extends beyond Sarvam to broader questions about how developing nations can achieve meaningful technological independence in the AI era. The piece serves as a wake-up call for the Indian tech ecosystem about the difference between appearing sovereign and actually being sovereign in AI development.",
         "tags": [
-          "tennis",
-          "cancer",
-          "friendship",
-          "sports journalism",
-          "health"
+          "AI",
+          "sovereignty",
+          "India",
+          "startups",
+          "technology policy"
         ],
         "source_type": "x"
       }
     ],
-    "excluded": [
-      {
-        "subject": "OpenAI API announcement",
-        "reason": "Corporate announcement without substantive analysis"
-      },
-      {
-        "subject": "Mastermind quiz show archive",
-        "reason": "Entertainment content lacking broader significance"
-      }
-    ]
+    "excluded": []
   }
 }
