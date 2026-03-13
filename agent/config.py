@@ -39,6 +39,18 @@ class Settings(BaseSettings):
     x_likes_csv: str = Field("likes.csv", description="Path to X likes CSV")
     x_username: str = Field("", description="X/Twitter username for likes scraping")
     x_scroll_attempts: int = Field(25, description="Scroll iterations for X scraping")
+    bookmark_lookback_days: int = Field(
+        14,
+        description="Skip bookmarks whose tweet timestamp is older than this many days. "
+        "Prevents stale bookmarks from 2023-2024 consuming Claude context. "
+        "Set to 0 to disable the filter.",
+    )
+    x_fetch_article_bodies: bool = Field(
+        True,
+        description="If True, fetch actual article content for X items with external links "
+        "(non-twitter/x.com). Gives Claude real content to score instead of just tweet text. "
+        "Adds ~8s per fetchable item.",
+    )
 
     # ── Compilation newsletters ────────────────────────────────────────────────
     compilation_senders: str = Field(
@@ -73,8 +85,10 @@ class Settings(BaseSettings):
         description="Minimum average score (0–10) an article must reach to be included",
     )
     compilation_min_links: int = Field(
-        2,
-        description="Emails with this many article links or more are expanded per-link",
+        5,
+        description="Emails with this many article links or more are treated as aggregator "
+        "digests and expanded per-link. Raised from 2 → 5 to avoid exploding regular "
+        "newsletters (e.g. Zerodha Daily Brief) that reference their sources.",
     )
 
     # ── Filtering ──────────────────────────────────────────────────────────────

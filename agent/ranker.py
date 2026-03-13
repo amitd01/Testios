@@ -21,9 +21,11 @@ from .models import Article, ExcludedItem, ScoreBreakdown, Newsletter
 log = logging.getLogger(__name__)
 
 CLAUDE_MODEL = "claude-sonnet-4-20250514"
-MAX_BODY_CHARS_EMAIL = 3000       # Token budget per email body
-MAX_BODY_CHARS_TWEET = 500        # Short tweets
-MAX_BODY_CHARS_LONG_TWEET = 1500  # Long-form tweets used as articles
+MAX_BODY_CHARS_EMAIL = 3000        # Token budget per email body
+MAX_BODY_CHARS_TWEET = 3000        # X items: raised from 500 now that fetch_article()
+                                   # populates body with real article content (~32 KB source,
+                                   # ~5-8 KB extracted text). Use same budget as emails.
+MAX_BODY_CHARS_LONG_TWEET = 1500   # Long-form tweets used as articles (no external content)
 
 
 def _build_system_prompt(max_words: int) -> str:
@@ -182,6 +184,11 @@ def _call_claude(
     response = client.messages.create(
         model=CLAUDE_MODEL,
         max_tokens=max_tokens,
+        # Low temperature for consistent, reproducible scoring across runs.
+        # Default temperature=1 caused borderline articles to flip include/exclude
+        # depending on sampling noise. 0.3 retains editorial judgment while
+        # stabilising numeric scores near the threshold.
+        temperature=0.3,
         system=system_prompt,
         messages=[{"role": "user", "content": prompt}],
     )

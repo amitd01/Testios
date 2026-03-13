@@ -113,14 +113,16 @@ def main(dry_run: bool = False) -> None:
         log.warning("X scrape failed (skipping X content): %s", exc)
 
     # ── X/Twitter data ────────────────────────────────────────────────────────
+    from .fetcher import fetch_article as _fetch_article
     x_newsletters = load_x_data(
         settings.x_bookmarks_csv,
         settings.x_likes_csv,
         used_urls,
+        bookmark_lookback_days=settings.bookmark_lookback_days,
+        fetch_fn=_fetch_article if settings.x_fetch_article_bodies else None,
     )
 
     # ── Whitelisted articles ──────────────────────────────────────────────────
-    from .fetcher import fetch_article as _fetch_article
     whitelist_urls = load_whitelist_file(settings.whitelist_file)
     whitelist_urls += fetch_gmail_whitelist_urls(service, settings.whitelist_label)
     whitelist_newsletters = build_whitelist_newsletters(whitelist_urls, used_urls, fetch_fn=_fetch_article)
@@ -174,7 +176,13 @@ def main(dry_run: bool = False) -> None:
     # ── Update dedup state ────────────────────────────────────────────────────
     if sent:
         email_ids = [nl.id for nl in email_newsletters]
-        article_urls = [a.url for a in articles]
+        # Resolve t.co shortlinks before storing so dedup works across runs
+        # regardless of whether URLs were stored pre- or post-resolution.
+        from .fetcher import resolve_url as _resolve_url
+        article_urls = [
+            _resolve_url(a.url) if "t.co/" in a.url else a.url
+            for a in articles
+        ]
         record_sent_digest(digests, today_key, email_ids, article_urls)
         save_sent_digests(settings.sent_digests_file, digests)
 
