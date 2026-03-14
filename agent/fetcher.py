@@ -29,8 +29,21 @@ READ_CAP_BYTES = 32 * 1024  # 32 KB
 # Request timeout in seconds
 FETCH_TIMEOUT = 8
 
-# Max articles to expand per compilation newsletter
+# Max articles to expand per compilation newsletter (legacy)
 MAX_ARTICLES_PER_COMPILATION = 8
+
+# Max links to fetch per email in the two-pass expansion (new architecture)
+MAX_ARTICLES_PER_EXPANSION = 10
+
+# Min chars for an email body to qualify as a standalone article (Pass 1)
+_EMAIL_BODY_MIN_CHARS = 800
+
+# Max links an email may have for its body to still count as a direct article
+# (emails with 3+ links are likely aggregator digests — skip Pass 1 for them)
+_EMAIL_BODY_MAX_LINKS_FOR_PASS1 = 2
+
+# Max body chars forwarded to the scorer for each candidate
+MAX_BODY_CHARS_CANDIDATE = 3000
 
 # Domains that render via JS or are paywalled/social — skip fetching
 _SKIP_DOMAINS = frozenset(
@@ -188,10 +201,114 @@ def fetch_article(url: str) -> tuple[str, str]:
     return title, body
 
 
+def extract_email_candidates(
+    newsletter: "Newsletter",
+) -> list:
+    """Convert an email newsletter into a list of ArticleCandidate objects.
+
+    Two passes run on **every** email (no compilation gate):
+
+    Pass 1 — Body as article
+        If the email body is longer than ``_EMAIL_BODY_MIN_CHARS`` characters
+        **and** the email has at most ``_EMAIL_BODY_MAX_LINKS_FOR_PASS1`` links,
+        the body itself is treated as a direct long-form article candidate.
+        This catches standalone Substack essays, a16z long reads, etc.
+
+    Pass 2 — Links in body
+        Each link extracted from the email body is fetched via
+        ``fetch_article()``.  Up to ``MAX_ARTICLES_PER_EXPANSION`` successfully
+        fetched links become individual candidates.
+
+    A single email can produce 0–1 body candidate (Pass 1) plus 0–10 link
+    candidates (Pass 2), for a maximum of 11 ArticleCandidate objects.
+
+    Args:
+        newsletter: A Newsletter email object.
+
+    Returns:
+        List of ``ArticleCandidate`` objects (possibly empty).
+    """
+    from .models import ArticleCandidate
+
+    candidates: list[ArticleCandidate] = []
+    seen_urls: set[str] = set()
+    body = newsletter.body
+    links = newsletter.links  # pre-extracted by extract_article_links()
+
+    # ── Pass 1: Body as article ───────────────────────────────────────────────
+    pass1_added = False
+    if len(body) > _EMAIL_BODY_MIN_CHARS and len(links) <= _EMAIL_BODY_MAX_LINKS_FOR_PASS1:
+        # Canonical URL: use the sole link if exactly one, else a synthetic ID
+        url = links[0] if len(links) == 1 else f"email:{newsletter.id}"
+        seen_urls.add(url)
+        candidates.append(
+            ArticleCandidate(
+                url=url,
+                title=newsletter.subject,
+                body=body[:MAX_BODY_CHARS_CANDIDATE],
+                source=newsletter.sender,
+                source_type="email",
+                date=newsletter.date,
+                origin_id=newsletter.id,
+            )
+        )
+        pass1_added = True
+        log.debug(
+            "extract_email_candidates: Pass 1 body candidate from '%s' (%d chars body).",
+            newsletter.subject[:60],
+            len(body),
+        )
+
+    # ── Pass 2: Fetch each link ───────────────────────────────────────────────
+    pass2_count = 0
+    for url in links:
+        if pass2_count >= MAX_ARTICLES_PER_EXPANSION:
+            break
+        if url in seen_urls:
+            continue
+        if _should_skip(url):
+            log.debug("extract_email_candidates: skipping domain for %s", url)
+            continue
+
+        title, body_text = fetch_article(url)
+        if not body_text:
+            log.debug("extract_email_candidates: no body fetched for %s", url)
+            continue
+
+        seen_urls.add(url)
+        candidates.append(
+            ArticleCandidate(
+                url=url,
+                title=title or newsletter.subject,
+                body=body_text[:MAX_BODY_CHARS_CANDIDATE],
+                source=newsletter.sender,
+                source_type="email",
+                date=newsletter.date,
+                origin_id=newsletter.id,
+            )
+        )
+        pass2_count += 1
+        log.debug(
+            "extract_email_candidates: Pass 2 fetched %s (%d chars).",
+            url,
+            len(body_text),
+        )
+
+    log.info(
+        "extract_email_candidates: '%s' → %d candidate(s) "
+        "(Pass 1: %s, Pass 2: %d link(s) fetched).",
+        newsletter.subject[:60],
+        len(candidates),
+        "yes" if pass1_added else "no",
+        pass2_count,
+    )
+    return candidates
+
+
 def expand_compilation(
-    newsletter: Newsletter,
+    newsletter: "Newsletter",
     used_urls: set[str],
-) -> list[Newsletter]:
+) -> list["Newsletter"]:
     """Replace a compilation newsletter with one Newsletter per fetched article.
 
     If all fetches fail, returns the original newsletter unchanged so Claude

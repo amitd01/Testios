@@ -65,6 +65,27 @@ class Settings(BaseSettings):
         description="Path to JSON file that stores per-run article history (30-day rolling)",
     )
 
+    # ── Pipeline state files (new 5-step architecture) ─────────────────────────
+    gmail_newsletter_label: str = Field(
+        "Newsletter-Reviewed",
+        description="Gmail label applied to processed newsletter emails. "
+        "Emails with this label are excluded from future Gmail queries "
+        "(-label: filter), preventing re-processing without relying solely "
+        "on the JSON dedup file.",
+    )
+    tweet_db_file: str = Field(
+        "considered_tweets.json",
+        description="Path to JSON file tracking all tweet URLs that have entered "
+        "the pipeline (permanent store, 30-day retention). "
+        "Prevents re-processing the same tweet across runs.",
+    )
+    score_db_file: str = Field(
+        "article_scores.json",
+        description="Path to JSON file storing permanent per-URL article scores "
+        "(URL → {score, scores, title, date_scored, source_type}). "
+        "Same article URL always gets the same score — no re-scoring.",
+    )
+
     # ── Whitelisting ────────────────────────────────────────────────────────────
     whitelist_file: str = Field(
         "whitelist.txt",

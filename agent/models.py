@@ -56,3 +56,34 @@ class ExcludedItem:
 
     subject: str
     reason: str
+
+
+@dataclass
+class ArticleCandidate:
+    """Intermediate representation of an article candidate for scoring.
+
+    Produced by Step 2 (EXPAND) from email newsletters and X tweets.
+    Consumed by Step 3 (SCORE) and Step 4 (SELECT).
+
+    Fields
+    ------
+    url         Canonical article URL (t.co resolved).
+    title       Page title (from fetched page or email subject).
+    body        Fetched article text or tweet body (Type C).
+    source      Human-readable author / newsletter name.
+    source_type "email" | "x" | "whitelist"
+    date        Publication date (tweet timestamp or email Date header).
+    origin_id   Stable back-reference to the source:
+                  - Gmail message ID for email candidates
+                  - Tweet URL for X candidates
+                  - Whitelist URL for whitelist candidates
+                Used in Step 5 to track processed sources.
+    """
+
+    url: str
+    title: str
+    body: str
+    source: str
+    source_type: str  # "email" | "x" | "whitelist"
+    date: str
+    origin_id: str

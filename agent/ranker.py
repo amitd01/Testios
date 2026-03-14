@@ -16,7 +16,7 @@ from tenacity import (
 )
 
 from .config import Settings
-from .models import Article, ExcludedItem, ScoreBreakdown, Newsletter
+from .models import Article, ArticleCandidate, ExcludedItem, ScoreBreakdown, Newsletter
 
 log = logging.getLogger(__name__)
 
@@ -277,3 +277,161 @@ def summarise_and_rank(
 
     log.info("Claude ranked %d article(s), excluded %d.", len(articles), len(excluded))
     return articles, excluded, teaser, quote, quote_attribution
+
+
+# ── New 5-step architecture: digest text generation ───────────────────────────
+
+
+def _build_digest_prompt(
+    top_articles: list[tuple[ArticleCandidate, float, ScoreBreakdown]],
+    max_words: int,
+) -> str:
+    """Build the digest-text prompt for the already-selected top articles."""
+    min_words = max_words - 50
+    blocks: list[str] = []
+    for i, (c, score, _) in enumerate(top_articles, 1):
+        body_snippet = c.body[:MAX_BODY_CHARS_EMAIL]
+        blocks.append(
+            f"[{i}] URL: {c.url}\n"
+            f"TITLE: {c.title or '(untitled)'}\n"
+            f"SOURCE: {c.source} ({c.source_type})\n"
+            f"SCORE: {score:.1f}\n"
+            f"DATE: {c.date}\n\n"
+            f"{body_snippet}"
+        )
+    items_text = "\n---\n".join(blocks)
+    return (
+        f"These {len(top_articles)} articles have been selected for today's newsletter digest "
+        f"(already scored; do NOT re-score).\n\n"
+        f"For each article:\n"
+        f"  - Write a {min_words}–{max_words} word editorial summary (insightful, not a mere paraphrase).\n"
+        f"  - Assign 3–5 relevant tags.\n\n"
+        f"Also produce:\n"
+        f"  - teaser: A punchy 5–6 sentence editorial intro for the digest.  "
+        f"Tease today's picks with energy and voice WITHOUT naming articles explicitly.\n"
+        f"  - quote: A single verbatim, memorable, thought-provoking sentence from one of the articles "
+        f"(direct quote, not a paraphrase).\n"
+        f"  - quote_attribution: Short attribution — article title or author name.\n\n"
+        f"Return ONLY this JSON (no markdown fences, no extra text):\n"
+        '{{\n'
+        '  "teaser": "5-6 sentence editorial intro",\n'
+        '  "quote": "A verbatim memorable sentence",\n'
+        '  "quote_attribution": "Short attribution",\n'
+        '  "articles": [\n'
+        '    {{\n'
+        '      "url":     "https://...",\n'
+        '      "title":   "Article title",\n'
+        '      "rank":    1,\n'
+        f'      "summary": "{min_words}-{max_words} word summary",\n'
+        '      "tags":    ["tag1", "tag2"]\n'
+        '    }}\n'
+        '  ]\n'
+        '}}\n\n'
+        f"ARTICLES:\n{items_text}"
+    )
+
+
+def _parse_digest_response(
+    raw: str,
+    top_articles: list[tuple[ArticleCandidate, float, ScoreBreakdown]],
+) -> tuple[list[Article], str, str, str]:
+    """Parse Claude's digest JSON and assemble Article objects."""
+    cleaned = _clean_json(raw)
+    data = json.loads(cleaned)
+
+    teaser = str(data.get("teaser", ""))
+    quote = str(data.get("quote", ""))
+    quote_attribution = str(data.get("quote_attribution", ""))
+
+    # Build URL → (candidate, score, breakdown) lookup
+    url_map = {c.url: (c, score, sb) for c, score, sb in top_articles}
+
+    articles: list[Article] = []
+    for item in data.get("articles", []):
+        url = str(item.get("url", ""))
+        entry = url_map.get(url)
+        if entry is None:
+            # Try index fallback if Claude changed the URL slightly
+            idx = len(articles)
+            if idx < len(top_articles):
+                entry = top_articles[idx]
+
+        if entry is None:
+            continue
+
+        c, score, breakdown = entry
+        src_lower = c.source_type.lower()
+        if src_lower == "x":
+            source_type = "x"
+        elif src_lower == "whitelist":
+            source_type = "whitelist"
+        else:
+            source_type = "email"
+
+        articles.append(
+            Article(
+                rank=int(item.get("rank", len(articles) + 1)),
+                title=str(item.get("title", c.title or "")),
+                url=url or c.url,
+                source=c.source,
+                date=c.date,
+                summary=str(item.get("summary", "")),
+                source_type=source_type,
+                tags=list(item.get("tags", [])),
+                score=score,
+                scores=breakdown,
+            )
+        )
+
+    return articles, teaser, quote, quote_attribution
+
+
+def generate_digest_text(
+    top_articles: list[tuple[ArticleCandidate, float, ScoreBreakdown]],
+    settings: Settings,
+) -> tuple[list[Article], str, str, str]:
+    """Generate article summaries, editorial teaser, and quote for selected articles.
+
+    Called ONLY for the top-selected articles (Step 4 output) so Claude sees a
+    compact, already-curated set rather than all scored candidates.  Scores are
+    not re-computed here — they come from the scorer's DB.
+
+    Args:
+        top_articles: Ordered list of ``(ArticleCandidate, score, ScoreBreakdown)``
+                      representing today's selected articles.
+        settings:     Pipeline settings.
+
+    Returns:
+        ``(articles, teaser, quote, quote_attribution)`` where *articles* is a
+        list of fully-populated ``Article`` objects ready for the renderer.
+    """
+    if not top_articles:
+        return [], "", "", ""
+
+    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+    max_words = settings.summary_max_words
+    system_prompt = _build_system_prompt(max_words)
+    prompt = _build_digest_prompt(top_articles, max_words)
+    max_tokens = max(4096, max_words * 30)
+
+    try:
+        raw = _call_claude(client, prompt, system_prompt, max_tokens)
+    except anthropic.APIError as exc:
+        log.error("Claude digest-text API error after retries: %s", exc, exc_info=True)
+        return [], "", "", ""
+
+    try:
+        articles, teaser, quote, quote_attribution = _parse_digest_response(
+            raw, top_articles
+        )
+    except (json.JSONDecodeError, KeyError, ValueError) as exc:
+        log.error(
+            "Claude digest-text response malformed: %s\nRaw:\n%s", exc, raw
+        )
+        return [], "", "", ""
+
+    log.info(
+        "generate_digest_text: %d article summary/summaries generated.",
+        len(articles),
+    )
+    return articles, teaser, quote, quote_attribution
