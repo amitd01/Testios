@@ -153,5 +153,39 @@
         "reason": "Historical quiz show content lacks substantive analysis or current relevance"
       }
     ]
+  },
+  "2026-03-14": {
+    "run_at": "2026-03-14T06:08:10",
+    "teaser": "Today's picks dive deep into two critical shifts reshaping global finance and technology. We explore the brewing storm in private credit markets, where warning signs from major fund managers suggest defaults could double in coming years. Meanwhile, we examine the complex relationship between open-source AI development and national sovereignty, questioning whether 'open' truly means independent. These stories reveal the hidden tensions between innovation, regulation, and control that define our economic moment.",
+    "included": [
+      {
+        "rank": 1,
+        "title": "What's going on with private credit?",
+        "url": "https://thedailybrief.zerodha.com/p/whats-going-on-with-private-credit",
+        "source": "The Daily Brief by Zerodha",
+        "score": 7.8,
+        "scores": {
+          "originality": 8.0,
+          "real_world_impact": 8.0,
+          "writing_quality": 8.0,
+          "interestingness": 7.0
+        },
+        "summary": "Private credit markets are showing serious stress signals, with industry leaders warning of potential crisis ahead. Steffen Meister from Partners Group, managing over $180 billion, predicts default rates could double in coming years. The article explains how private credit emerged as banks retreated from lending after 2008 financial regulations, creating space for non-bank lenders to fill the gap. These private credit funds offer loans to mid-market companies that can't access public bond markets, typically charging higher rates than traditional banks. The current concern stems from several factors: funds are freezing withdrawals, marking down asset values, and some portfolio companies are failing. Unlike traditional banking with deposit insurance and regulatory oversight, private credit operates with less transparency and protection. The warning signs include overleveraged borrowers, aggressive lending standards during the low-rate environment, and potential liquidity mismatches as economic conditions tighten. This situation echoes pre-2008 dynamics where alternative lending grew rapidly with insufficient risk assessment. The article contextualizes this for Indian readers, noting private credit's relative novelty in India compared to its $1.7 trillion size in the US market.",
+        "tags": [
+          "finance",
+          "private credit",
+          "banking",
+          "risk management",
+          "financial crisis"
+        ],
+        "source_type": "email"
+      }
+    ],
+    "excluded": [
+      {
+        "subject": "Sarvam. Open is not sovereign",
+        "reason": "Insufficient content - only tweet text and link available, no full article content to analyze"
+      }
+    ]
   }
 }
