@@ -27,5 +27,34 @@
       }
     ],
     "excluded": []
+  },
+  "2026-03-14": {
+    "run_at": "2026-03-14T06:22:21",
+    "teaser": "The financial world is buzzing with whispers of the next potential crisis, and it's not coming from where you might expect. Private credit markets are showing cracks that have seasoned fund managers issuing stark warnings about doubling default rates. When Swiss asset managers overseeing $180 billion start sounding alarms publicly, it's time to pay attention. This isn't just another market hiccup—it's a fundamental shift in how credit flows through the global economy. Today we dive deep into the mechanics of this shadow banking phenomenon and why its troubles could ripple far beyond Wall Street. Buckle up for a masterclass in modern finance's newest vulnerability.",
+    "included": [
+      {
+        "rank": 1,
+        "title": "What's going on with private credit? | Who said what? S2E34",
+        "url": "https://thedailybrief.zerodha.com/p/whats-going-on-with-private-credit",
+        "source": "The Daily Brief by Zerodha <thedailybriefing+who-said-what@substack.com>",
+        "score": 7.5,
+        "scores": {
+          "originality": 7.0,
+          "real_world_impact": 8.0,
+          "writing_quality": 7.0,
+          "interestingness": 8.0
+        },
+        "summary": "The private credit market is experiencing significant turbulence that has industry veterans comparing it to potential systemic risks. Steffen Meister from Partners Group, managing over $180 billion, warned that default rates could double in coming years—a stark assessment that signals deeper structural issues. The article expertly contextualizes private credit's emergence as an alternative to traditional banking, explaining how it fills gaps left by post-2008 regulatory constraints on banks. Unlike traditional lending where banks use short-term deposits for long-term loans, private credit funds match investor capital with borrower needs more directly. However, this shadow banking system now faces stress tests as economic conditions tighten. The piece illuminates how private credit became a $1.7 trillion market by offering higher yields to investors and more flexible terms to borrowers, particularly middle-market companies shut out of public bond markets. But with funds freezing withdrawals and assets being marked down, the sector's rapid growth may have outpaced its risk management capabilities. The analysis reveals how regulatory arbitrage created this parallel lending universe, but also suggests that what goes around comes around—the same market forces that enabled private credit's rise may now threaten its stability.",
+        "tags": [
+          "private credit",
+          "financial markets",
+          "shadow banking",
+          "default risk",
+          "alternative finance"
+        ],
+        "source_type": "email"
+      }
+    ],
+    "excluded": []
   }
 }
