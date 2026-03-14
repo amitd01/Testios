@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280, height=720">
+<title>PFM India - Product Walkthrough</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1280px;
+    height: 720px;
+    overflow: hidden;
+    background: #0d0f13;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #fff;
+  }
+
+  /* ── Slide System ── */
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    animation-fill-mode: forwards;
+    animation-timing-function: ease-in-out;
+  }
+
+  /* Slide 1: Title (0s – 5s) */
+  .slide-1 { animation: fadeSlide 5s 0s forwards; }
+  /* Slide 2: Welcome (5s – 10s) */
+  .slide-2 { animation: fadeSlide 5s 5s forwards; }
+  /* Slide 3: Dashboard (10s – 16s) */
+  .slide-3 { animation: fadeSlide 6s 10s forwards; }
+  /* Slide 4: Transactions (16s – 21s) */
+  .slide-4 { animation: fadeSlide 5s 16s forwards; }
+  /* Slide 5: Accounts + Budgets (21s – 26s) */
+  .slide-5 { animation: fadeSlide 5s 21s forwards; }
+  /* Slide 6: CTA (26s – 30s) */
+  .slide-6 { animation: fadeSlide 4s 26s forwards; }
+
+  @keyframes fadeSlide {
+    0%   { opacity: 0; transform: scale(0.97); }
+    8%   { opacity: 1; transform: scale(1); }
+    85%  { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.01); }
+  }
+
+  /* ── Title Slide ── */
+  .title-slide {
+    flex-direction: column;
+    gap: 24px;
+    background: radial-gradient(ellipse at 50% 40%, #1a2340 0%, #0d0f13 70%);
+  }
+
+  .logo-text {
+    font-size: 72px;
+    font-weight: 800;
+    letter-spacing: -2px;
+    background: linear-gradient(135deg, #60a5fa, #34d399);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .tagline {
+    font-size: 28px;
+    font-weight: 300;
+    color: #94a3b8;
+    max-width: 700px;
+    text-align: center;
+    line-height: 1.4;
+  }
+
+  .tagline em {
+    font-style: normal;
+    color: #60a5fa;
+    font-weight: 500;
+  }
+
+  .badge {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 8px 20px;
+    background: rgba(96, 165, 250, 0.15);
+    border: 1px solid rgba(96, 165, 250, 0.3);
+    border-radius: 999px;
+    font-size: 14px;
+    color: #60a5fa;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  /* ── Screenshot Slides ── */
+  .screenshot-slide {
+    flex-direction: row;
+    padding: 40px 60px;
+    gap: 48px;
+  }
+
+  .screenshot-slide .text-side {
+    flex: 0 0 320px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 16px;
+  }
+
+  .screenshot-slide .step-number {
+    font-size: 14px;
+    font-weight: 600;
+    color: #34d399;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  .screenshot-slide h2 {
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.5px;
+  }
+
+  .screenshot-slide p {
+    font-size: 18px;
+    color: #94a3b8;
+    line-height: 1.5;
+  }
+
+  .screenshot-slide .img-side {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .screenshot-slide .img-side img {
+    max-width: 100%;
+    max-height: 580px;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08);
+  }
+
+  /* ── Split Slide (two screenshots) ── */
+  .split-slide {
+    flex-direction: column;
+    padding: 36px 60px;
+    gap: 20px;
+  }
+
+  .split-slide .split-header {
+    text-align: center;
+  }
+
+  .split-slide .step-number {
+    font-size: 14px;
+    font-weight: 600;
+    color: #34d399;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  .split-slide h2 {
+    font-size: 32px;
+    font-weight: 700;
+    margin-top: 4px;
+  }
+
+  .split-slide .split-row {
+    display: flex;
+    gap: 32px;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .split-slide .split-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .split-slide .split-card img {
+    max-height: 420px;
+    max-width: 100%;
+    border-radius: 10px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.06);
+  }
+
+  .split-slide .split-card span {
+    font-size: 15px;
+    color: #94a3b8;
+  }
+
+  /* ── CTA Slide ── */
+  .cta-slide {
+    flex-direction: column;
+    gap: 24px;
+    background: radial-gradient(ellipse at 50% 50%, #162a1e 0%, #0d0f13 70%);
+  }
+
+  .cta-slide .logo-text {
+    font-size: 56px;
+  }
+
+  .cta-slide .cta-text {
+    font-size: 30px;
+    font-weight: 400;
+    color: #e2e8f0;
+  }
+
+  .cta-btn {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 16px 40px;
+    background: linear-gradient(135deg, #34d399, #60a5fa);
+    border-radius: 12px;
+    font-size: 20px;
+    font-weight: 600;
+    color: #0d0f13;
+    letter-spacing: 0.5px;
+  }
+
+  .cta-sub {
+    font-size: 14px;
+    color: #64748b;
+    margin-top: 4px;
+  }
+
+  /* ── Progress Bar ── */
+  .progress-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #60a5fa, #34d399);
+    animation: progress 30s linear forwards;
+    z-index: 100;
+  }
+
+  @keyframes progress {
+    from { width: 0; }
+    to { width: 100%; }
+  }
+
+  /* ── Feature Pills (title slide) ── */
+  .features-row {
+    display: flex;
+    gap: 16px;
+    margin-top: 8px;
+  }
+
+  .feature-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 10px;
+    font-size: 14px;
+    color: #cbd5e1;
+  }
+
+  .feature-pill .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .dot-blue { background: #60a5fa; }
+  .dot-green { background: #34d399; }
+  .dot-amber { background: #fbbf24; }
+  .dot-purple { background: #a78bfa; }
+</style>
+</head>
+<body>
+
+  <!-- Slide 1: Title (0s – 5s) -->
+  <div class="slide slide-1 title-slide">
+    <div class="badge">Personal Finance Manager</div>
+    <div class="logo-text">PFM India</div>
+    <div class="tagline">Zero manual entry. Your finances,<br><em>auto-tracked from Gmail.</em></div>
+    <div class="features-row">
+      <div class="feature-pill"><span class="dot dot-blue"></span> Email Powered</div>
+      <div class="feature-pill"><span class="dot dot-green"></span> 45+ Banks</div>
+      <div class="feature-pill"><span class="dot dot-amber"></span> Smart Insights</div>
+      <div class="feature-pill"><span class="dot dot-purple"></span> Secure</div>
+    </div>
+  </div>
+
+  <!-- Slide 2: Welcome / Login (5s – 10s) -->
+  <div class="slide slide-2 screenshot-slide">
+    <div class="text-side">
+      <div class="step-number">Step 1</div>
+      <h2>Connect Your Gmail</h2>
+      <p>One-click Google OAuth sign-in. We securely scan your bank alert emails &mdash; nothing else.</p>
+    </div>
+    <div class="img-side">
+      <img src="screenshots/welcome.png" alt="Welcome page">
+    </div>
+  </div>
+
+  <!-- Slide 3: Dashboard (10s – 16s) -->
+  <div class="slide slide-3 screenshot-slide">
+    <div class="text-side">
+      <div class="step-number">Step 2</div>
+      <h2>See Your Full Financial Picture</h2>
+      <p>Net worth, income, spending, savings &mdash; all in one dashboard. Updated automatically.</p>
+    </div>
+    <div class="img-side">
+      <img src="screenshots/dashboard.png" alt="Dashboard">
+    </div>
+  </div>
+
+  <!-- Slide 4: Transactions (16s – 21s) -->
+  <div class="slide slide-4 screenshot-slide">
+    <div class="text-side">
+      <div class="step-number">Step 3</div>
+      <h2>Every Transaction, Tracked</h2>
+      <p>Search, filter, and categorize. Each transaction parsed with trust scoring and smart deduplication.</p>
+    </div>
+    <div class="img-side">
+      <img src="screenshots/transactions.png" alt="Transactions">
+    </div>
+  </div>
+
+  <!-- Slide 5: Accounts + Budgets (21s – 26s) -->
+  <div class="slide slide-5 split-slide">
+    <div class="split-header">
+      <div class="step-number">And More</div>
+      <h2>Accounts, Budgets &amp; Insights</h2>
+    </div>
+    <div class="split-row">
+      <div class="split-card">
+        <img src="screenshots/accounts.png" alt="Accounts">
+        <span>Bank &amp; Card Accounts</span>
+      </div>
+      <div class="split-card">
+        <img src="screenshots/budgets.png" alt="Budgets">
+        <span>Category Budgets</span>
+      </div>
+      <div class="split-card">
+        <img src="screenshots/insights.png" alt="Insights">
+        <span>Smart Nudges</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 6: CTA (26s – 30s) -->
+  <div class="slide slide-6 cta-slide">
+    <div class="logo-text">PFM India</div>
+    <div class="cta-text">Take control of your finances today.</div>
+    <div class="cta-btn">Get Started with Gmail</div>
+    <div class="cta-sub">Free &bull; Secure &bull; No manual entry</div>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="progress-bar"></div>
+
+</body>
+</html>
