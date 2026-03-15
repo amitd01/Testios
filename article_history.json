@@ -189,190 +189,32 @@
     ]
   },
   "2026-03-15": {
-    "run_at": "2026-03-15T06:37:01",
-    "teaser": "The global economy's most vulnerable chokepoint is making headlines again, while India's fintech sector faces a wave of regulatory changes and strategic pivots. From oil tankers stuck outside the Strait of Hormuz to AI agents revolutionizing business workflows, this week's picks reveal how narrow passages—whether geographic or technological—can reshape entire industries. Meanwhile, the intersection of artificial intelligence and payments is creating new possibilities for commerce, even as traditional players scramble to adapt to an increasingly digital-first world.",
+    "run_at": "2026-03-15T11:44:26",
+    "teaser": "Sometimes the most extraordinary business empires emerge not from grand visions, but from relentless focus on fundamentals. Today we explore how obsessive attention to controllable variables can transform a humble root beer stand into a global hospitality giant. The story reveals why fighting against expansion might be the secret to sustainable growth, and how mastering downside risk can turn economic downturns into competitive advantages. It's a masterclass in building without blueprints, where success comes not from predicting the future, but from creating systems robust enough to thrive in any future. The lessons here apply far beyond hospitality—they're about the patient art of empire-building through disciplined execution.",
     "included": [
       {
         "rank": 1,
-        "title": "The chokepoint that powers the global economy",
-        "url": "https://thedailybrief.zerodha.com/p/the-chokepoint-that-powers-the-global",
-        "source": "Beyond the Charts",
-        "score": 8.0,
-        "scores": {
-          "originality": 7.0,
-          "real_world_impact": 9.0,
-          "writing_quality": 8.0,
-          "interestingness": 8.0
-        },
-        "summary": "The Strait of Hormuz, a narrow 33-kilometer waterway between Iran and Oman, has become the focal point of global energy security concerns following recent military conflicts in the region. This seemingly insignificant geographic feature carries enormous economic weight—approximately 20 million barrels of oil and a fifth of global LNG supply pass through it daily. When US-Israeli strikes on Iran triggered retaliatory actions across the Gulf, the strait's vulnerability became starkly apparent as ships stopped moving and insurers pulled back coverage. Goldman Sachs data reveals that 13.4 million barrels per day of crude exports moved through this route in 2025, primarily from Saudi Arabia, Iraq, and the UAE. While alternative pipeline routes exist, they can only handle about 4.2 million barrels per day according to the International Energy Agency. The disruption created a logistics nightmare, with over 200 oil and LNG vessels anchored outside the strait as shipowners refused to risk transit through an active conflict zone. This bottleneck effect demonstrates how modern global commerce remains dependent on a handful of critical geographic passages, where even temporary disruptions can cascade into worldwide economic impacts.",
-        "tags": [
-          "geopolitics",
-          "energy",
-          "supply chain",
-          "economics"
-        ],
-        "source_type": "email"
-      },
-      {
-        "rank": 2,
-        "title": "Starting AI Today? This Is Exactly What I'd Do",
-        "url": "https://emergingai.substack.com/p/starting-ai-today-this-is-exactly",
-        "source": "Opinion AI from Emerging AI",
-        "score": 7.8,
-        "scores": {
-          "originality": 8.0,
-          "real_world_impact": 8.0,
-          "writing_quality": 8.0,
-          "interestingness": 7.0
-        },
-        "summary": "A 54-year-old political consultant's transformation from AI skeptic to power user illustrates a fundamental shift in how professionals should approach artificial intelligence. Rather than viewing AI as a replacement threat, the author argues it should be seen as a force multiplier that amplifies existing expertise and experience. The consultant, initially fearing obsolescence, learned to combine his 20 years of industry knowledge with AI's speed and execution capabilities, ultimately building six AI agents that could produce a $75,000 consulting proposal in three hours. The key insight is moving beyond treating AI like a search engine—asking questions and copying answers—to giving AI the ability to act directly within your work environment. This means using tools like code editors (Cursor, VS Code + Claude) that allow AI to see files, create content, and fix its own mistakes autonomously. The author emphasizes that learning to code isn't necessary; rather, the focus should be on developing a new way of thinking about AI as an active collaborator rather than a passive tool. This mindset shift, combined with giving AI 'hands' to work in your digital environment, represents the difference between basic AI usage and truly transformative productivity gains.",
-        "tags": [
-          "artificial intelligence",
-          "productivity",
-          "business transformation",
-          "automation"
-        ],
-        "source_type": "email"
-      },
-      {
-        "rank": 3,
-        "title": "Perplexity Computer vs Claude: Pick the Right AI Agent",
-        "url": "https://emergingai.substack.com/p/perplexity-computer-vs-claude-pick",
-        "source": "Opinion AI from Emerging AI",
-        "score": 7.5,
-        "scores": {
-          "originality": 8.0,
-          "real_world_impact": 7.0,
-          "writing_quality": 8.0,
-          "interestingness": 7.0
-        },
-        "summary": "Perplexity Computer represents a new category of AI tool that functions as a 'project machine' rather than a traditional chatbot, dynamically routing tasks across 19 frontier models including Claude Opus 4.6, Google Gemini, and GPT-5.2. Unlike single-model approaches, Perplexity's architecture leverages each model's strengths—Claude for coding, Gemini for research, GPT-5.2 for long-context tasks—while orchestrating complex workflows that can build market dashboards or research presentations from single prompts. At $200/month for 10,000 credits (with heavy users reporting actual costs of $500-1,500), it targets users coordinating real workflows across Gmail, Slack, Notion, and GitHub rather than simple question-answering. The comparison with Claude's suite (Desktop, Code, and Cowork) reveals different philosophies: Perplexity bets on the aggregator layer being the winning position, while Claude focuses on deep integration within specific environments. The key differentiator lies in use case—if you're answering questions, cheaper tools suffice, but if you're orchestrating multi-step projects across various platforms, Perplexity Computer's ability to break jobs into smaller tasks, spin up specialized helpers, and deliver finished outputs justifies its premium pricing. The 19-model architecture represents a significant technical advancement in AI orchestration.",
-        "tags": [
-          "artificial intelligence",
-          "productivity tools",
-          "software comparison",
-          "automation"
-        ],
-        "source_type": "email"
-      },
-      {
-        "rank": 4,
-        "title": "CBI searches 15 locations to investigate cyber fraud network",
-        "url": "https://theheadandtale.com/fintech-news/cbi-searches-15-locations-to-investigate-cyber-fraud-network/",
-        "source": "The Head and Tale",
-        "score": 7.3,
-        "scores": {
-          "originality": 7.0,
-          "real_world_impact": 8.0,
-          "writing_quality": 7.0,
-          "interestingness": 7.0
-        },
-        "summary": "The Central Bureau of Investigation has uncovered a sophisticated transnational cybercrime network that allegedly defrauded victims of approximately Rs 900 crore through fake online investment and part-time job schemes. The operation, led by chartered accountant Ashok Kumar Sharma, used social media platforms and encrypted messaging to lure victims with promises of high returns, initially allowing small deposits and showing fictitious profits to build trust before encouraging larger investments. The fraud's sophistication lay in its money laundering mechanism—funds were rapidly moved through multiple mule bank accounts before being withdrawn at offshore ATMs or converted through Dubai-based fintech platform Pyypl. In a parallel operation, Sharma allegedly used 15 shell companies to convert Rs 900 crore into Tether stablecoins (USDT) via Indian virtual asset exchanges, then transferred the cryptocurrency to whitelisted wallets. The CBI's coordinated searches across Delhi, Rajasthan, Uttar Pradesh, and Punjab revealed that several shell company directors were unsuspecting individuals fraudulently appointed using forged documentation. This case highlights the growing threat of cross-border financial crimes that exploit both traditional banking systems and emerging fintech platforms, demonstrating how criminals are adapting to use legitimate financial infrastructure for illicit purposes while leveraging cryptocurrency for final fund extraction.",
-        "tags": [
-          "cybercrime",
-          "fintech",
-          "cryptocurrency",
-          "fraud investigation"
-        ],
-        "source_type": "email"
-      },
-      {
-        "rank": 5,
-        "title": "Neobank Fi closes banking services on its platform",
-        "url": "https://theheadandtale.com/fintech-news/neobank-fi-closes-banking-services-on-its-platform/",
-        "source": "The Head and Tale",
-        "score": 7.0,
-        "scores": {
-          "originality": 7.0,
-          "real_world_impact": 7.0,
-          "writing_quality": 7.0,
-          "interestingness": 7.0
-        },
-        "summary": "Fi, the neobank startup backed by Peak XV Partners and other prominent investors, has shut down its digital banking services and redirected users to partner Federal Bank's channels, marking a significant strategic pivot away from consumer-first digital banking. Founded in 2019 by Sujith Narayan and Sumit Gwalani with the mission of making banking 'more thoughtful and human,' Fi had raised $169 million and built a user base of primarily young Indians through simplified onboarding, gamification features, and financial literacy programs. The closure represents more than just a product shutdown—it signals a broader industry reckoning with the neobanking model in India. Cofounder Narayan indicated in February that the company would realign toward 'deep technology, AI, and building complex systems for startups & large enterprises,' suggesting Fi recognized that sustainable differentiation lay in B2B infrastructure rather than consumer-facing banking products. This pivot reflects the challenges many neobanks face in achieving profitability while competing with established banks that have regulatory advantages and deeper pockets. Fi's decision to exit consumer banking while maintaining its partnership with Federal Bank demonstrates how fintech companies are increasingly focusing on their core technological strengths rather than trying to replicate traditional banking services.",
-        "tags": [
-          "fintech",
-          "neobanking",
-          "business pivot",
-          "startup strategy"
-        ],
-        "source_type": "email"
-      },
-      {
-        "rank": 6,
-        "title": "PayU partners with CoRover.ai to enable AI-led agentic payments",
-        "url": "https://theheadandtale.com/fintech-news/payu-partners-with-corover-ai-to-enable-ai-led-agentic-payments/",
-        "source": "The Head and Tale",
-        "score": 6.8,
-        "scores": {
-          "originality": 7.0,
-          "real_world_impact": 7.0,
-          "writing_quality": 6.0,
-          "interestingness": 7.0
-        },
-        "summary": "PayU's strategic partnership with CoRover.ai represents a pioneering effort to integrate conversational AI with payment infrastructure, potentially transforming how India's next 500 million users—who are primarily voice-first and conversational—interact with digital commerce. The collaboration integrates PayU's payment infrastructure with CoRover's BharatGPT-powered conversational Agentic AI platform, creating what the companies claim is one of the first partnerships between a sovereign Large Language Model provider and a payment aggregator. BharatGPT, CoRover's enterprise-grade LLM that attracted investment from HDFC Bank, enables AI-driven payments across multiple Indian languages and dialects, addressing a crucial accessibility barrier in digital payments. The concept of 'agentic payments' represents a fundamental shift from traditional transaction models—instead of users navigating through apps and forms, AI agents can understand intent, complete tasks, and execute payments securely within natural conversations. This approach could be particularly transformative in India, where language barriers and digital literacy challenges have limited fintech adoption among certain demographics. PayU's Chief Product Officer Manas Mishra's observation that 'the next phase of digital payments will happen inside AI-led conversations' suggests this partnership is positioning for a future where commerce becomes truly frictionless through conversational interfaces.",
-        "tags": [
-          "fintech",
-          "artificial intelligence",
-          "payments",
-          "conversational AI"
-        ],
-        "source_type": "email"
-      },
-      {
-        "rank": 7,
-        "title": "Cred gets RBI's final nod to operate as payment aggregator",
-        "url": "https://theheadandtale.com/fintech-news/cred-gets-rbi-s-final-nod-to-operate-as-payment-aggregator/",
-        "source": "The Head and Tale",
-        "score": 6.5,
+        "title": "[Outliers] J.W. Marriott: Building an Empire Without a Master Plan",
+        "url": "https://a4d65a79.click.convertkit-mail4.com/92urk4vnofnh6wd0n8a5izdr7o7lhwh285w/x0hph6he2rxq5nf5/aHR0cHM6Ly9wb2RjYXN0cy5hcHBsZS5jb20vdXMvcG9kY2FzdC9vdXRsaWVycy1qLXctbWFycmlvdHQtYnVpbGRpbmctYW4tZW1waXJlLXdpdGhvdXQvaWQ5OTAxNDk0ODE_aT0xMDAwNzU0NDM4MDkz",
+        "source": "\"Shane Parrish (FS)\" <newsletter@farnamstreetblog.com>",
+        "score": 6.75,
         "scores": {
           "originality": 6.0,
           "real_world_impact": 7.0,
-          "writing_quality": 6.0,
+          "writing_quality": 7.0,
           "interestingness": 7.0
         },
-        "summary": "Cred's receipt of final RBI approval to operate as a payment aggregator marks another milestone in the Reserve Bank of India's systematic licensing of fintech players, while positioning Kunal Shah's company to expand beyond its credit card payment roots into broader merchant services. The authorization allows Cred to onboard merchants, process payments on their behalf, and manage settlements and refunds across payment instruments—capabilities that could significantly diversify its revenue streams beyond the rewards-based credit card model that made it famous. With this approval, Cred now holds multiple regulatory licenses across payments, lending, insurance, and investments, creating a comprehensive financial services ecosystem. The timing is notable given Cred's valuation challenges—the company raised $72 million in June 2025 at a $3.5 billion valuation, significantly lower than its 2022 peak of $6.4 billion. This regulatory approval provides Cred with new monetization opportunities in the merchant payments space, potentially helping justify its valuation through diversified revenue streams. The RBI's recent activity in granting payment aggregator licenses to major players like Razorpay, Pine Labs, and Paytm suggests a broader regulatory push to formalize and strengthen India's digital payments infrastructure, with Cred now positioned as another key player in this ecosystem.",
+        "summary": "This fascinating deep dive into Bill Marriott's business philosophy reveals how the world's largest hotel empire emerged from counterintuitive principles. Starting with a nine-seat root beer stand in Washington, DC, Marriott's journey to hospitality dominance wasn't driven by grand strategic vision but by obsessive focus on controllable variables and downside risk management. The most striking aspect? He actively resisted entering the hotel business until age 55, preferring to master adjacent markets first—including pioneering the airline catering industry. Marriott's approach centered on isolating variables like location selection and refusing to depend on forces beyond his control. This disciplined methodology allowed his company to expand during the Great Depression while competitors collapsed. The episode illuminates how sustainable empire-building often requires fighting your own growth instincts, choosing depth over breadth, and building systems robust enough to thrive regardless of external conditions. Rather than betting on market predictions, Marriott created a machine optimized for serving people well—a deceptively simple goal that became the foundation for extraordinary scale. His story challenges conventional wisdom about entrepreneurial ambition, suggesting that the most enduring businesses emerge from patient, methodical execution rather than visionary leaps.",
         "tags": [
-          "fintech",
-          "regulatory approval",
-          "payments",
-          "business expansion"
+          "business strategy",
+          "risk management",
+          "hospitality",
+          "entrepreneurship",
+          "systems thinking"
         ],
         "source_type": "email"
       }
     ],
-    "excluded": [
-      {
-        "subject": "New follower on Substack",
-        "reason": "Promotional notification email with no substantive content"
-      },
-      {
-        "subject": "\"I just kept thinking, they were almost home\"",
-        "reason": "Newsletter digest format without specific substantive articles"
-      },
-      {
-        "subject": "NSE appoints 20 bankers for proposed IPO",
-        "reason": "Routine corporate announcement lacking broader significance"
-      },
-      {
-        "subject": "Slice appoints former SBI chief GM Sreedevi Pillai as independent director",
-        "reason": "Standard corporate appointment news with limited impact"
-      },
-      {
-        "subject": "CoRover - Conversational AI Platform | Enterprise Virtual Assistants",
-        "reason": "Company website/promotional content, not editorial article"
-      },
-      {
-        "subject": "Warbug Pincus-backed Truhome Finance files draft papers for IPO",
-        "reason": "Routine IPO filing announcement without unique insights"
-      },
-      {
-        "subject": "[X Like] Ira Dugal @dugalira · Mar 13",
-        "reason": "Tweet with broken/inaccessible link to article"
-      },
-      {
-        "subject": "[X Like] Thiyagarajan Maruthavanan (Rajan) @mtrajan · Mar 9",
-        "reason": "Tweet with broken/inaccessible link to article"
-      }
-    ]
+    "excluded": []
   }
 }
