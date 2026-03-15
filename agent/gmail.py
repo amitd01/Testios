@@ -97,13 +97,22 @@ def get_gmail_service(settings: Settings):
 
 
 def _build_query(settings: Settings, since: str) -> str:
-    """Build the Gmail search query for newsletter detection."""
+    """Build the Gmail search query for newsletter detection.
+
+    The ``-label:{newsletter_label}`` clause excludes emails that have already
+    been processed and labelled in a previous pipeline run, so they are never
+    returned again.  This is the primary dedup mechanism for email; the
+    message-ID check in ``already_processed_ids`` acts as a secondary guard.
+    """
     all_senders = _NEWSLETTER_DOMAINS + _KNOWN_SENDERS + settings.newsletter_senders_list
     sender_terms = " OR ".join(f"from:{s}" for s in all_senders)
+    # Sanitise label name for Gmail query: spaces → hyphens, lowercase
+    label_query = settings.gmail_newsletter_label.lower().replace(" ", "-")
     query = (
         f"({sender_terms} OR label:newsletters) "
         f"after:{since} "
         f"-label:CATEGORY_PROMOTIONS "
+        f"-label:{label_query} "
         f"-subject:bounce -subject:\"delivery failure\""
     )
     return query
@@ -210,6 +219,86 @@ def fetch_newsletters(
 
     log.info("Returning %d newsletters after filtering.", len(newsletters))
     return newsletters
+
+
+def ensure_newsletter_label(service, label_name: str = "Newsletter-Reviewed") -> str:
+    """Return the Gmail label ID for *label_name*, creating the label if needed.
+
+    Args:
+        service:    Authenticated Gmail API service object.
+        label_name: Display name of the label (default: "Newsletter-Reviewed").
+
+    Returns:
+        The label ID string (e.g. "Label_12345678").
+    """
+    result = service.users().labels().list(userId="me").execute()
+    for label in result.get("labels", []):
+        if label.get("name", "").lower() == label_name.lower():
+            log.debug("Gmail label '%s' already exists (id=%s).", label_name, label["id"])
+            return label["id"]
+
+    # Label not found — create it
+    body = {
+        "name": label_name,
+        "labelListVisibility": "labelShow",
+        "messageListVisibility": "show",
+    }
+    created = service.users().labels().create(userId="me", body=body).execute()
+    log.info("Created Gmail label '%s' (id=%s).", label_name, created["id"])
+    return created["id"]
+
+
+@retry(
+    retry=retry_if_exception_type(HttpError),
+    wait=wait_exponential(multiplier=1, min=2, max=30),
+    stop=stop_after_attempt(3),
+    before_sleep=before_sleep_log(log, logging.WARNING),
+    reraise=True,
+)
+def _modify_message(service, msg_id: str, body: dict) -> None:
+    """Apply a label modify operation to a single message (with retry)."""
+    service.users().messages().modify(
+        userId="me", id=msg_id, body=body
+    ).execute()
+
+
+def label_and_archive_messages(
+    service,
+    msg_ids: list[str],
+    label_id: str,
+) -> None:
+    """Apply *label_id* to each message and archive it (remove from INBOX).
+
+    Called in Step 5 (PERSIST) for ALL processed email message IDs, not just
+    those whose articles were selected for the digest.  This ensures the
+    Gmail query in future runs never returns these emails again.
+
+    Args:
+        service:   Authenticated Gmail API service object.
+        msg_ids:   List of Gmail message IDs to label and archive.
+        label_id:  Gmail label ID returned by ``ensure_newsletter_label()``.
+    """
+    if not msg_ids:
+        return
+
+    modify_body = {
+        "addLabelIds": [label_id],
+        "removeLabelIds": ["INBOX"],
+    }
+    for msg_id in msg_ids:
+        try:
+            _modify_message(service, msg_id, modify_body)
+            log.debug("Labelled and archived message %s.", msg_id)
+        except HttpError as exc:
+            log.warning(
+                "Could not label/archive message %s: %s — skipping.", msg_id, exc
+            )
+
+    log.info(
+        "Labelled %d message(s) with label_id=%s and removed from INBOX.",
+        len(msg_ids),
+        label_id,
+    )
 
 
 @retry(
