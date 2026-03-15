@@ -100,5 +100,31 @@
     "article_urls": [
       "https://thedailybrief.zerodha.com/p/whats-going-on-with-private-credit"
     ]
+  },
+  "2026-03-15": {
+    "message_ids": [
+      "19cefec833bb6b26",
+      "19cef8f91a4ac4d0",
+      "19cee82f9cf089d3",
+      "19ced20729ac0c49",
+      "19cece1f2d14cc7a",
+      "19cec8d6479e8dea::https://theheadandtale.com/fintech-news/cbi-searches-15-locations-to-investigate-cyber-fraud-network/",
+      "19cec8d6479e8dea::https://theheadandtale.com/fintech-news/nse-appoints-20-bankers-for-proposed-ipo/",
+      "19cec8d6479e8dea::https://theheadandtale.com/fintech-news/neobank-fi-closes-banking-services-on-its-platform/",
+      "19cec8d6479e8dea::https://theheadandtale.com/fintech-news/slice-appoints-former-sbi-chief-gm-sreedevi-pillai-as-independent-director/",
+      "19cec8d6479e8dea::https://theheadandtale.com/fintech-news/cred-gets-rbi-s-final-nod-to-operate-as-payment-aggregator/",
+      "19cec8d6479e8dea::https://theheadandtale.com/fintech-news/payu-partners-with-corover-ai-to-enable-ai-led-agentic-payments/",
+      "19cec8d6479e8dea::https://CoRover.ai",
+      "19cec8d6479e8dea::https://theheadandtale.com/fintech-news/warbug-pincus-backed-truhome-finance-files-draft-papers-for-ipo/"
+    ],
+    "article_urls": [
+      "https://thedailybrief.zerodha.com/p/the-chokepoint-that-powers-the-global",
+      "https://emergingai.substack.com/p/starting-ai-today-this-is-exactly",
+      "https://emergingai.substack.com/p/perplexity-computer-vs-claude-pick",
+      "https://theheadandtale.com/fintech-news/cbi-searches-15-locations-to-investigate-cyber-fraud-network/",
+      "https://theheadandtale.com/fintech-news/neobank-fi-closes-banking-services-on-its-platform/",
+      "https://theheadandtale.com/fintech-news/payu-partners-with-corover-ai-to-enable-ai-led-agentic-payments/",
+      "https://theheadandtale.com/fintech-news/cred-gets-rbi-s-final-nod-to-operate-as-payment-aggregator/"
+    ]
   }
 }
