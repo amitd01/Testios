@@ -155,38 +155,33 @@
     ]
   },
   "2026-03-14": {
-    "run_at": "2026-03-14T06:08:10",
-    "teaser": "Today's picks dive deep into two critical shifts reshaping global finance and technology. We explore the brewing storm in private credit markets, where warning signs from major fund managers suggest defaults could double in coming years. Meanwhile, we examine the complex relationship between open-source AI development and national sovereignty, questioning whether 'open' truly means independent. These stories reveal the hidden tensions between innovation, regulation, and control that define our economic moment.",
+    "run_at": "2026-03-14T06:22:21",
+    "teaser": "The financial world is buzzing with whispers of the next potential crisis, and it's not coming from where you might expect. Private credit markets are showing cracks that have seasoned fund managers issuing stark warnings about doubling default rates. When Swiss asset managers overseeing $180 billion start sounding alarms publicly, it's time to pay attention. This isn't just another market hiccup—it's a fundamental shift in how credit flows through the global economy. Today we dive deep into the mechanics of this shadow banking phenomenon and why its troubles could ripple far beyond Wall Street. Buckle up for a masterclass in modern finance's newest vulnerability.",
     "included": [
       {
         "rank": 1,
-        "title": "What's going on with private credit?",
+        "title": "What's going on with private credit? | Who said what? S2E34",
         "url": "https://thedailybrief.zerodha.com/p/whats-going-on-with-private-credit",
-        "source": "The Daily Brief by Zerodha",
-        "score": 7.8,
+        "source": "The Daily Brief by Zerodha <thedailybriefing+who-said-what@substack.com>",
+        "score": 7.5,
         "scores": {
-          "originality": 8.0,
+          "originality": 7.0,
           "real_world_impact": 8.0,
-          "writing_quality": 8.0,
-          "interestingness": 7.0
+          "writing_quality": 7.0,
+          "interestingness": 8.0
         },
-        "summary": "Private credit markets are showing serious stress signals, with industry leaders warning of potential crisis ahead. Steffen Meister from Partners Group, managing over $180 billion, predicts default rates could double in coming years. The article explains how private credit emerged as banks retreated from lending after 2008 financial regulations, creating space for non-bank lenders to fill the gap. These private credit funds offer loans to mid-market companies that can't access public bond markets, typically charging higher rates than traditional banks. The current concern stems from several factors: funds are freezing withdrawals, marking down asset values, and some portfolio companies are failing. Unlike traditional banking with deposit insurance and regulatory oversight, private credit operates with less transparency and protection. The warning signs include overleveraged borrowers, aggressive lending standards during the low-rate environment, and potential liquidity mismatches as economic conditions tighten. This situation echoes pre-2008 dynamics where alternative lending grew rapidly with insufficient risk assessment. The article contextualizes this for Indian readers, noting private credit's relative novelty in India compared to its $1.7 trillion size in the US market.",
+        "summary": "The private credit market is experiencing significant turbulence that has industry veterans comparing it to potential systemic risks. Steffen Meister from Partners Group, managing over $180 billion, warned that default rates could double in coming years—a stark assessment that signals deeper structural issues. The article expertly contextualizes private credit's emergence as an alternative to traditional banking, explaining how it fills gaps left by post-2008 regulatory constraints on banks. Unlike traditional lending where banks use short-term deposits for long-term loans, private credit funds match investor capital with borrower needs more directly. However, this shadow banking system now faces stress tests as economic conditions tighten. The piece illuminates how private credit became a $1.7 trillion market by offering higher yields to investors and more flexible terms to borrowers, particularly middle-market companies shut out of public bond markets. But with funds freezing withdrawals and assets being marked down, the sector's rapid growth may have outpaced its risk management capabilities. The analysis reveals how regulatory arbitrage created this parallel lending universe, but also suggests that what goes around comes around—the same market forces that enabled private credit's rise may now threaten its stability.",
         "tags": [
-          "finance",
           "private credit",
-          "banking",
-          "risk management",
-          "financial crisis"
+          "financial markets",
+          "shadow banking",
+          "default risk",
+          "alternative finance"
         ],
         "source_type": "email"
       }
     ],
-    "excluded": [
-      {
-        "subject": "Sarvam. Open is not sovereign",
-        "reason": "Insufficient content - only tweet text and link available, no full article content to analyze"
-      }
-    ]
+    "excluded": []
   },
   "2026-03-15": {
     "run_at": "2026-03-15T11:44:26",
@@ -217,15 +212,59 @@
     ],
     "excluded": []
   },
-  "2026-03-14": {
-    "run_at": "2026-03-14T06:22:21",
-    "teaser": "The financial world is buzzing with whispers of the next potential crisis, and it's not coming from where you might expect. Private credit markets are showing cracks that have seasoned fund managers issuing stark warnings about doubling default rates. When Swiss asset managers overseeing $180 billion start sounding alarms publicly, it's time to pay attention. This isn't just another market hiccup—it's a fundamental shift in how credit flows through the global economy. Today we dive deep into the mechanics of this shadow banking phenomenon and why its troubles could ripple far beyond Wall Street. Buckle up for a masterclass in modern finance's newest vulnerability.",
+  "2026-03-17": {
+    "run_at": "2026-03-17T12:45:00",
+    "teaser": "From Wall Street's surprising bet on coliving to the hidden architecture of enterprise software, this week's digest cuts through the noise to reveal where real money and power are moving. We explore why Goldman Sachs just made a statement acquisition, how AI might finally liberate us from legacy software hell, and the privacy battles brewing in your pocket. Plus, discover the NotebookLM features that could transform how you work with information. These aren't just tech stories—they're signals of fundamental shifts in how we live, work, and build.",
     "included": [
       {
         "rank": 1,
-        "title": "What's going on with private credit? | Who said what? S2E34",
-        "url": "https://thedailybrief.zerodha.com/p/whats-going-on-with-private-credit",
-        "source": "The Daily Brief by Zerodha <thedailybriefing+who-said-what@substack.com>",
+        "title": "Why the World Still Runs on SAP",
+        "url": "https://www.a16z.news/p/why-the-world-still-runs-on-sap",
+        "source": "a16z <a16z@substack.com>",
+        "score": 8.0,
+        "scores": {
+          "originality": 7.0,
+          "real_world_impact": 9.0,
+          "writing_quality": 8.0,
+          "interestingness": 8.0
+        },
+        "summary": "This a16z analysis cuts to the heart of enterprise software's biggest paradox: why Fortune 500 companies remain shackled to systems they openly despise. SAP, ServiceNow, and Salesforce dominate not through superior user experience—quite the opposite—but because they've become the digital DNA of modern business operations. The piece reveals the staggering costs of escape: SAP migrations can consume $700 million, three years, and armies of consultants, often resulting in systems that barely function beyond generating static reports. The insight here isn't just about legacy software's stickiness, but about AI's potential to fundamentally reshape this dynamic. Rather than wholesale replacement, the authors argue for a more nuanced future where AI becomes the intelligent interface layer, making these systems programmable and accessible while preserving the critical business logic embedded within them. This represents a massive market opportunity—not in building new systems of record, but in creating the control plane that makes existing ones actually usable. The winners will be platforms that first reduce migration risk and timeline, then expand into daily operations as trusted automation layers.",
+        "tags": [
+          "enterprise-software",
+          "AI",
+          "digital-transformation",
+          "legacy-systems",
+          "business-automation"
+        ],
+        "source_type": "email"
+      },
+      {
+        "rank": 2,
+        "title": "Goldman Sachs Just Bought a Coliving Company",
+        "url": "https://everythingcoliving.substack.com/p/goldman-sachs-just-bought-a-coliving",
+        "source": "Everything Coliving <everythingcoliving@substack.com>",
+        "score": 7.75,
+        "scores": {
+          "originality": 8.0,
+          "real_world_impact": 7.0,
+          "writing_quality": 8.0,
+          "interestingness": 8.0
+        },
+        "summary": "Goldman Sachs' acquisition of Urban Campus marks a watershed moment for the coliving industry, signaling its evolution from experimental housing model to institutional asset class. This isn't venture capital or private equity dabbling—it's one of the world's most sophisticated financial institutions making a permanent capital allocation to coliving operations. The timing is particularly striking, occurring as The Collective, once Europe's coliving darling, collapsed after failing to find a buyer, highlighting the sector's brutal consolidation phase. Meanwhile, Barcelona's coliving surge—a 900% increase in five years—has triggered mass protests and regulatory backlash, illustrating the tension between housing innovation and affordability concerns. The Goldman move validates what industry insiders have long argued: coliving's economics work at scale when properly executed. Urban Campus brings real assets, proven operations, and a track record across European markets—exactly the kind of mature platform that justifies institutional investment. For operators, this acquisition represents both validation and a new competitive reality where institutional capital will increasingly dominate. The message is clear: coliving has crossed the threshold from alternative experiment to mainstream real estate strategy, with all the opportunities and challenges that institutional backing brings.",
+        "tags": [
+          "coliving",
+          "real-estate",
+          "institutional-investment",
+          "housing-crisis",
+          "urban-development"
+        ],
+        "source_type": "email"
+      },
+      {
+        "rank": 3,
+        "title": "Do banking apps really need all these permissions?",
+        "url": "https://nithinkamath.substack.com/p/do-banking-apps-really-need-all-these",
+        "source": "Nithin Kamath <nithinkamath@substack.com>",
         "score": 7.5,
         "scores": {
           "originality": 7.0,
@@ -233,13 +272,35 @@
           "writing_quality": 7.0,
           "interestingness": 8.0
         },
-        "summary": "The private credit market is experiencing significant turbulence that has industry veterans comparing it to potential systemic risks. Steffen Meister from Partners Group, managing over $180 billion, warned that default rates could double in coming years—a stark assessment that signals deeper structural issues. The article expertly contextualizes private credit's emergence as an alternative to traditional banking, explaining how it fills gaps left by post-2008 regulatory constraints on banks. Unlike traditional lending where banks use short-term deposits for long-term loans, private credit funds match investor capital with borrower needs more directly. However, this shadow banking system now faces stress tests as economic conditions tighten. The piece illuminates how private credit became a $1.7 trillion market by offering higher yields to investors and more flexible terms to borrowers, particularly middle-market companies shut out of public bond markets. But with funds freezing withdrawals and assets being marked down, the sector's rapid growth may have outpaced its risk management capabilities. The analysis reveals how regulatory arbitrage created this parallel lending universe, but also suggests that what goes around comes around—the same market forces that enabled private credit's rise may now threaten its stability.",
+        "summary": "Zerodha's founder Nithin Kamath delivers a pointed critique of banking app privacy practices, highlighting a fundamental contradiction in financial technology security. While most banking apps demand extensive device permissions—access to SMS, contacts, phone functions—in the name of security, Kamath argues this violates the Principle of Least Privilege, a cornerstone of cybersecurity best practices. His company's approach offers a compelling counter-narrative: Zerodha's Kite app requests zero permissions on mobile devices, relying instead on SEBI's mandatory two-factor authentication framework to balance security with privacy. This isn't just a technical debate—it's a philosophical one about trust, user agency, and the true nature of digital security. Kamath's position challenges the industry's permission-heavy approach, suggesting that robust security can coexist with minimal data access. The broader implications extend beyond banking to any app that claims security justifies invasive permissions. His 'golden rule' philosophy—don't do unto others what you don't want done unto you—offers a refreshing alternative to the surveillance capitalism model that dominates fintech. For millions of users who've grown accustomed to surrendering digital privacy for financial services, Zerodha's approach demonstrates that this trade-off isn't inevitable.",
         "tags": [
-          "private credit",
-          "financial markets",
-          "shadow banking",
-          "default risk",
-          "alternative finance"
+          "fintech",
+          "privacy",
+          "cybersecurity",
+          "banking",
+          "user-rights"
+        ],
+        "source_type": "email"
+      },
+      {
+        "rank": 4,
+        "title": "3 Hidden NotebookLM Features Most People Don't Use",
+        "url": "https://aimaker.substack.com/p/notebooklm-hidden-features-gemini-gems-antigravity-guide",
+        "source": "Wyndo from AI Maker <aimaker@substack.com>",
+        "score": 6.5,
+        "scores": {
+          "originality": 6.0,
+          "real_world_impact": 7.0,
+          "writing_quality": 6.0,
+          "interestingness": 7.0
+        },
+        "summary": "This deep dive into NotebookLM's ecosystem reveals how Google's research tool transforms when connected to its broader AI infrastructure. While most users treat NotebookLM as a standalone research assistant, the piece explores three powerful integrations that unlock entirely new capabilities: Gemini Canvas for visual collaboration, Gems for persistent AI personalities, and Antigravity for automated research workflows. The author's previous work connecting NotebookLM to Claude via MCP focused on external integrations, but this exploration maps the internal Google ecosystem connections that many users overlook. These aren't just feature additions—they represent a fundamental shift in how AI tools can work together within a unified platform. Gemini Canvas turns research into visual, collaborative workspaces. Gems create specialized AI assistants that maintain context and personality across sessions. Antigravity automates the research pipeline itself, creating systems that continuously gather and process information. The implications extend beyond productivity hacks to suggest a future where AI tools form interconnected workflows rather than isolated applications. For power users, these connections transform NotebookLM from a research tool into a comprehensive knowledge management and creation platform, demonstrating how platform integration can multiply individual tool capabilities exponentially.",
+        "tags": [
+          "AI-tools",
+          "productivity",
+          "research",
+          "Google-ecosystem",
+          "workflow-automation"
         ],
         "source_type": "email"
       }

@@ -1,11 +1,4 @@
 {
-  "2026-03-09": {
-    "message_ids": [
-      "19cd0561cf031653",
-      "19ccebb62c4a17bd",
-      "19cce1ea8770f6c3"
-    ]
-  },
   "2026-03-10": {
     "message_ids": [
       "19cd4e5e7b9259bb",
@@ -136,5 +129,21 @@
   "2026-03-16": {
     "message_ids": [],
     "article_urls": []
+  },
+  "2026-03-17": {
+    "message_ids": [
+      "19cfbcef60de65e4",
+      "19cfb27aae1b3a0d",
+      "19cfa254c9ee82cb",
+      "19cf979439ba5eb9",
+      "19cf709cf0872b3d",
+      "19cf6f81de2947cd"
+    ],
+    "article_urls": [
+      "https://www.a16z.news/p/why-the-world-still-runs-on-sap",
+      "https://everythingcoliving.substack.com/p/goldman-sachs-just-bought-a-coliving",
+      "https://nithinkamath.substack.com/p/do-banking-apps-really-need-all-these",
+      "https://aimaker.substack.com/p/notebooklm-hidden-features-gemini-gems-antigravity-guide"
+    ]
   }
 }
