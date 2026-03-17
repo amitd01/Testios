@@ -1,4 +1,4 @@
-# Testios — Hiring Pipeline & PFM India
+# Testios — Hiring Pipeline
 
 Full-stack web application repository containing two projects built with Node.js/Express backends and React 18 frontends.
 
