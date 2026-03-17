@@ -24,15 +24,13 @@ A production-ready autonomous pipeline that fetches Gmail newsletters and X/Twit
 
 ## 1. What It Does
 
-Each run (daily, automated):
+Each run (daily, automated) executes a **5-step pipeline**:
 
-1. **Fetches Gmail newsletters** — searches for emails from known newsletter senders (Substack, beehiiv, Ghost, Mailchimp, ConvertKit, Buttondown, etc.) received in the last 24 hours.
-2. **Scrapes X/Twitter** — headlessly logs into X and scrapes your bookmarks and recent likes, extracting embedded article links.
-3. **Deduplicates** — skips Gmail messages and article URLs already included in a previous digest (7-day rolling window).
-4. **Sends to Claude** — passes all content to `claude-sonnet-4-20250514` which scores each article on four dimensions, writes summaries, generates an editorial teaser, and picks a quotable quote.
-5. **Builds a styled HTML email** — dark-mode-safe, with score pills, source badges, anchor navigation, and the quote section.
-6. **Sends the digest** via Gmail API.
-7. **Saves dedup state** — commits `sent_digests.json` back to the repo so CI runs stay in sync.
+1. **FILTER** — Queries Gmail with `-label:Newsletter-Reviewed` (emails already processed are excluded at the API level). Loads `considered_tweets.json` to skip X/Twitter tweet URLs already seen in previous runs.
+2. **EXPAND** — Converts raw sources into `ArticleCandidate` objects. For emails: two passes per email — Pass 1 treats the email body itself as a candidate (if > 800 chars and ≤ 2 links); Pass 2 fetches each link in the body (cap: 10 per email). For X tweets: three types — Type A (single external link → fetch article), Type B (multiple links → fetch each → multiple candidates), Type C (long-form tweet ≥ 200 words → tweet body is the article).
+3. **SCORE** — Each candidate is looked up in `article_scores.json` (persistent cache). Cache hits return the stored score immediately — same URL always gets the same score. New candidates are sent to Claude in a single batch call (`temperature=0.3`), scored on four dimensions (originality, real-world impact, writing quality, interestingness), and written to the cache.
+4. **SELECT** — Filters candidates with score ≥ 6.5, sorts descending, takes top 8. A separate Claude call generates the editorial teaser and closing quote for only the selected articles.
+5. **PERSIST** — Labels all processed Gmail messages `Newsletter-Reviewed` and archives them. Appends tweet URLs to `considered_tweets.json` (30-day retention). Updates `article_scores.json`. Sends the HTML + plain-text digest via Gmail API. Commits `sent_digests.json`, `article_history.json`, and `whitelist.txt` back to the repo.
 
 **Key features:**
 - 4-dimension article scoring: originality, real-world impact, writing quality, interestingness
@@ -169,6 +167,12 @@ Create a `.env` file in the project root (copy `.env.example` as a template).
 | `BLOCKLIST_SENDERS` | No | `""` | Sender emails/domains to skip (comma-separated) |
 | `LOG_LEVEL` | No | `INFO` | Logging level: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
 | `LOG_FORMAT` | No | `text` | Log format: `text` (human-readable) or `json` (structured via structlog) |
+| `GMAIL_NEWSLETTER_LABEL` | No | `Newsletter-Reviewed` | Gmail label applied to every processed email; used in the `-label:` filter to prevent re-processing |
+| `TWEET_DB_FILE` | No | `considered_tweets.json` | Permanent log of all tweet URLs that have entered the pipeline (30-day retention) |
+| `SCORE_DB_FILE` | No | `article_scores.json` | Persistent per-URL article score cache — same URL always returns the same score |
+| `MIN_SCORE_THRESHOLD` | No | `6.5` | Minimum average score (0–10) an article must reach to be included in the digest |
+| `MAX_ARTICLES` | No | `8` | Maximum number of articles per digest |
+| `WHITELIST_FILE` | No | `whitelist.txt` | Plain-text file with one manually curated URL per line; these bypass the score gate |
 
 **Note on `ANTHROPIC_API_KEY`:** Claude Desktop exports this variable as an empty string into child processes. The `load_settings()` function detects and temporarily removes the empty variable before loading settings so the value in `.env` takes precedence.
 
@@ -232,50 +236,56 @@ make format              # black .
 ## 7. Architecture & Data Flow
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  INPUTS                                                     │
-│                                                             │
-│  Gmail (OAuth2)               X/Twitter (Playwright)        │
-│       │                              │                      │
-│       ▼                              ▼                      │
-│  fetch_newsletters()      scraper.main() ──► bookmarks.csv  │
-│  (last 24h, deduped)                  └──► likes.csv        │
-│       │                       load_x_data()                 │
-│       └──────────────┬──────────────┘                      │
-│                      │  merge + filter already-used URLs    │
-└──────────────────────┼──────────────────────────────────────┘
-                       │
-                       ▼
-          ┌────────────────────────┐
-          │  Claude API            │
-          │  claude-sonnet-4-...   │
-          │                        │
-          │  • Score 4 dimensions  │
-          │  • Rank articles       │
-          │  • Write summaries     │
-          │  • Generate teaser     │
-          │  • Pick quote          │
-          └────────────┬───────────┘
-                       │
-                       ▼
-          ┌────────────────────────┐
-          │  Build Digest          │
-          │  build_html()          │
-          │  build_plain_text()    │
-          └────────────┬───────────┘
-                       │
-                       ▼
-          ┌────────────────────────┐
-          │  Send via Gmail API    │
-          │  send_digest()         │
-          └────────────┬───────────┘
-                       │
-                       ▼
-          ┌────────────────────────┐
-          │  Update Dedup State    │
-          │  sent_digests.json     │
-          │  (committed to repo)   │
-          └────────────────────────┘
+INPUTS: Gmail (OAuth2)           X/Twitter (Playwright)
+             │                          │
+             ▼                          ▼
+        fetch_newsletters()     scraper.main() ──► bookmarks.csv / likes.csv
+             │                  load_x_data()
+             └──────────────────────────┘
+                                │
+                    ┌───────────▼────────────┐
+                    │  STEP 1 — FILTER        │
+                    │  Gmail: -label:         │
+                    │    Newsletter-Reviewed  │
+                    │  X: considered_tweets   │
+                    │     .json dedup         │
+                    └───────────┬────────────┘
+                                │
+                    ┌───────────▼────────────┐
+                    │  STEP 2 — EXPAND        │
+                    │  Email Pass 1: body     │
+                    │    as candidate         │
+                    │  Email Pass 2: fetch    │
+                    │    each link (cap 10)   │
+                    │  X Type A/B/C tweets    │
+                    │  → ArticleCandidate[]   │
+                    └───────────┬────────────┘
+                                │
+          article_scores.json ──►
+                    ┌───────────▼────────────┐
+                    │  STEP 3 — SCORE         │
+                    │  Cache hits: reuse DB   │
+                    │  New items: Claude API  │
+                    │    batch (temp=0.3)     │
+                    │  Write new scores → DB  │
+                    └───────────┬────────────┘
+                                │
+                    ┌───────────▼────────────┐
+                    │  STEP 4 — SELECT        │
+                    │  Filter score ≥ 6.5     │
+                    │  Sort desc → top 8      │
+                    │  generate_digest_text() │
+                    │  (teaser + quote)        │
+                    └───────────┬────────────┘
+                                │
+                    ┌───────────▼────────────┐
+                    │  STEP 5 — PERSIST       │
+                    │  Label + archive Gmail  │
+                    │  Write tweet DB         │
+                    │  Write score DB         │
+                    │  Send email digest      │
+                    │  Commit state to repo   │
+                    └────────────────────────┘
 ```
 
 ### Module Map
@@ -283,25 +293,34 @@ make format              # black .
 ```
 newsletter_agent/
 ├── agent/
-│   ├── __init__.py          # Pipeline orchestration (main entry point)
+│   ├── __init__.py          # 5-step pipeline orchestration (main entry point)
 │   ├── config.py            # Pydantic settings, .env loading
-│   ├── models.py            # Data classes: Newsletter, Article, ScoreBreakdown
-│   ├── gmail.py             # Gmail OAuth, fetch newsletters, send digest
+│   ├── models.py            # Data classes: ArticleCandidate, Newsletter, Article, ScoreBreakdown
+│   ├── gmail.py             # Gmail OAuth, fetch newsletters, label management, send digest
 │   ├── extractor.py         # MIME body parsing, URL extraction
-│   ├── ranker.py            # Claude API call, JSON parsing, ranking
-│   ├── dedup.py             # Deduplication state read/write
+│   ├── fetcher.py           # Two-pass email expansion, article body fetching (cap 10/email)
+│   ├── scorer.py            # Persistent score DB: load/save/lookup/store, Claude batch scoring
+│   ├── ranker.py            # score_candidates() + generate_digest_text() (separate Claude call)
+│   ├── dedup.py             # sent_digests + considered_tweets state read/write
 │   ├── renderer.py          # HTML and plain-text email builder
 │   └── x_scraper/
 │       ├── scraper.py       # Playwright automation for X bookmarks/likes
-│       └── loader.py        # CSV → Newsletter objects
+│       └── loader.py        # CSV → ArticleCandidate objects (tweet-URL-based dedup, Type A/B/C)
 ├── tests/
 │   ├── test_ranker.py       # Claude API + JSON parsing tests
 │   ├── test_extractor.py    # MIME/link extraction tests
-│   └── test_renderer.py     # HTML/plain-text rendering tests
+│   ├── test_renderer.py     # HTML/plain-text rendering tests
+│   ├── test_scorer.py       # Score DB: cache hits, new scoring, DB roundtrip
+│   ├── test_loader.py       # X tweet type classification (A/B/C), stale filtering
+│   ├── test_dedup.py        # considered_tweets tracking, 30-day retention
+│   └── test_gmail_labels.py # ensure_newsletter_label, label_and_archive_messages
 ├── .github/workflows/
 │   └── newsletter.yml       # GitHub Actions CI/CD workflow
 ├── run.py                   # CLI: python run.py [--dry-run]
 ├── run_scraper.py           # CLI: standalone X scraper (first-time login)
+├── article_scores.json      # Persistent score cache (committed to repo)
+├── considered_tweets.json   # Permanent tweet URL log (committed to repo)
+├── sent_digests.json        # 7-day article dedup state (committed to repo)
 ├── requirements.txt
 ├── requirements-dev.txt
 └── Makefile
@@ -346,6 +365,18 @@ Claude Desktop exports `ANTHROPIC_API_KEY=""` (empty string) into the environmen
 ### `agent/models.py` — Data Classes
 
 **Purpose:** Typed data containers used across the pipeline.
+
+```python
+@dataclass
+class ArticleCandidate:
+    url: str          # Canonical article URL (t.co resolved for X items)
+    title: str        # From fetched page <title> or tweet subject
+    body: str         # Fetched article text (or tweet text for Type C)
+    source: str       # "Author / Newsletter Name"
+    source_type: str  # "email" | "x" | "whitelist"
+    date: str         # Tweet timestamp or email date
+    origin_id: str    # Gmail message ID or tweet URL (used in Step 5 for labelling/tracking)
+```
 
 ```python
 @dataclass
@@ -397,6 +428,15 @@ class ExcludedItem:
 ### `agent/gmail.py` — Gmail Integration
 
 **Purpose:** OAuth2 authentication, newsletter fetching, and digest sending.
+
+#### Label Management — `ensure_newsletter_label(service)` / `label_and_archive_messages(service, msg_ids, label_id)`
+
+Two new functions added as part of the Step 5 PERSIST logic:
+
+- **`ensure_newsletter_label(service)`** — Calls `labels.list()` to find an existing label named `"Newsletter-Reviewed"`. If not found, calls `labels.create()` to create it. Returns the label ID. Idempotent — safe to call on every run.
+- **`label_and_archive_messages(service, msg_ids, label_id)`** — For each message ID, calls `messages.modify()` with `addLabelIds=[label_id]` and `removeLabelIds=["INBOX"]`. Labels the email AND archives it in one API call. Called with ALL processed email IDs at Step 5 — even emails that contributed no selected articles.
+
+These two functions are what enable the Gmail `-label:Newsletter-Reviewed` filter in Step 1: once an email is labelled here, it can never re-enter the pipeline.
 
 #### Authentication — `get_gmail_service(settings)`
 
@@ -465,6 +505,36 @@ Plain text is preferred; HTML is used only if no plain text exists.
 
 ---
 
+### `agent/scorer.py` — Persistent Score Database
+
+**Purpose:** Maintain a permanent per-URL article score cache so the same article always gets the same score across runs.
+
+#### Score DB format (`article_scores.json`)
+
+```json
+{
+  "https://example.com/article": {
+    "score": 7.5,
+    "scores": {"originality": 8, "real_world_impact": 7, "writing_quality": 8, "interestingness": 7},
+    "title": "Article Title",
+    "date_scored": "2026-03-13",
+    "source_type": "email"
+  }
+}
+```
+
+#### Key Functions
+
+- **`load_score_db(path)`** — Reads `article_scores.json`; returns `{}` if the file doesn't exist (first run).
+- **`save_score_db(path, db)`** — Writes the DB to disk. No pruning — the cache is permanent.
+- **`lookup_score(db, url)`** — Returns the stored record for a URL, or `None` if not found.
+- **`store_score(db, url, title, score, scores, source_type, date_scored)`** — Adds or updates a record in the in-memory DB (caller must call `save_score_db()` to persist).
+- **`score_new_candidates(candidates, score_db, settings)`** — Splits candidates into cached vs new. Cached ones return their stored score immediately. New ones are sent to Claude in a **single batch call** (`temperature=0.3`), scored, stored in the DB, and returned. Returns `list[tuple[ArticleCandidate, float, ScoreBreakdown]]` for all candidates.
+
+**Why `temperature=0.3`:** Low temperature makes Claude's scoring more deterministic. Combined with the DB cache (same URL → same score), this means score comparisons across days are meaningful — a 7.8 today is genuinely better than a 7.2 from last week.
+
+---
+
 ### `agent/ranker.py` — Claude AI Integration
 
 **Purpose:** Send newsletter content to Claude, parse the JSON response, and return ranked articles.
@@ -522,6 +592,15 @@ Each article is scored 0–10 on four dimensions:
 
 Final ranking is by the average of all four dimensions.
 
+#### Two Separate Claude Calls (Architecture Change)
+
+The old `summarise_and_rank()` function did everything in one call — scoring AND generating the teaser/quote. This has been split into two concerns:
+
+- **`score_candidates(candidates, settings)`** — Scoring only. Sends `ArticleCandidate` objects to Claude, gets back per-article scores on four dimensions. Called by `scorer.py`'s `score_new_candidates()`. No teaser, no summary prose — just numbers.
+- **`generate_digest_text(top_articles, settings)`** — Digest generation only. Receives only the selected articles (≤ 8) and generates the editorial teaser (5–6 sentences) and closing quotable quote. Called after Step 4 SELECT, so Claude only writes prose for articles that will actually appear in the digest.
+
+**Why split?** Scoring is evaluation; it should be deterministic (`temperature=0.3`) and cacheable. Digest text is creative writing; it runs only on the final selection. Keeping them separate prevents the cache from storing summaries alongside scores, and ensures the teaser always reflects today's specific selection.
+
 #### Key Functions
 
 - `_build_system_prompt(max_words)` — instructs Claude to act as a high-standards newsletter curator
@@ -529,19 +608,15 @@ Final ranking is by the average of all four dimensions.
 - `_clean_json(raw)` — strips markdown code fences (` ```json ... ``` `) that Claude sometimes wraps around JSON
 - `_parse_response(raw)` → `tuple[list[Article], list[ExcludedItem], str, str, str]` — parses JSON, constructs dataclass objects, returns 5-tuple
 - `_call_claude(client, prompt, system_prompt, max_tokens)` — API call with tenacity retry (up to 3 attempts, 1–60s backoff, on `APIError` or `RateLimitError`)
-- `summarise_and_rank(newsletters, settings)` — orchestrates everything; returns empty 5-tuple on error
+- `generate_digest_text(top_articles, settings)` — orchestrates digest generation; returns empty strings on error (digest is sent without teaser/quote rather than crashing)
 
 ---
 
 ### `agent/dedup.py` — Deduplication State
 
-**Purpose:** Prevent the same newsletter or article from appearing in multiple digests.
+**Purpose:** Prevent the same newsletter or article from appearing in multiple digests. Also tracks all tweet URLs that have entered the pipeline — not just those whose articles were included.
 
-Two independent dedup dimensions:
-1. **Gmail message IDs** — prevents re-fetching and re-processing the same email
-2. **Article URLs** — prevents the same article appearing across different emails or X posts
-
-State is stored in `sent_digests.json` (JSON file committed to the repo):
+#### `sent_digests.json` — Article dedup (7-day rolling window)
 
 ```json
 {
@@ -553,9 +628,26 @@ State is stored in `sent_digests.json` (JSON file committed to the repo):
 }
 ```
 
-**7-day rolling window**: `save_sent_digests()` prunes entries older than 7 days before writing, keeping the file small.
+`save_sent_digests()` prunes entries older than 7 days before writing.
 
-**Why committed to the repo**: GitHub Actions runs on ephemeral Ubuntu containers. The only way to persist state across daily runs is to commit the file back to the repo. The workflow bot commits with `[skip ci]` to prevent triggering another run.
+#### `considered_tweets.json` — Tweet consideration log (30-day retention)
+
+```json
+{
+  "2026-03-13": ["https://x.com/user/status/123", "https://x.com/user/status/456"],
+  "2026-03-12": ["https://x.com/user/status/111"]
+}
+```
+
+New functions added to `dedup.py`:
+- **`load_considered_tweets(path)`** — Loads the file; returns `{}` if missing.
+- **`save_considered_tweets(path, db)`** — Prunes entries older than 30 days before writing.
+- **`already_considered_tweets(db)`** — Returns a flat `set[str]` of all tweet URLs across all date keys. Used in Step 1 to filter the X scraper output.
+- **`record_considered_tweets(db, today_key, tweet_urls)`** — Appends this run's tweet URLs under today's date key. Called at Step 5 for ALL tweet URLs that entered the pipeline — regardless of whether their articles scored above threshold.
+
+**Why 30 days (not 7)?** X bookmarks can be up to 14 days old. A 7-day window would fail to exclude a bookmark from 10 days ago. 30 days provides a wide enough margin.
+
+**Why committed to the repo**: GitHub Actions runs on ephemeral Ubuntu containers. All three state files (`sent_digests.json`, `considered_tweets.json`, `article_scores.json`) are committed back after each run so the next day's CI starts with the correct state.
 
 ---
 
@@ -638,74 +730,100 @@ Accepts parameters for integration with the main pipeline:
 
 ### `agent/x_scraper/loader.py` — X CSV Loader
 
-**Purpose:** Convert X scraper CSV output into `Newsletter` objects for the ranking pipeline.
+**Purpose:** Convert X scraper CSV output into `ArticleCandidate` objects for the pipeline.
 
 Reads `bookmarks.csv` and `likes.csv` (columns: `url, author, text, timestamp, embedded_links`).
 
-For each tweet:
-1. Skips if no embedded links
-2. Filters out links already in `used_urls` (URL-level dedup)
-3. Skips the tweet entirely if all its links are already used
-4. Creates `Newsletter` with:
-   - `id`: `f"x:{tweet_url}"` — `x:` prefix prevents collision with Gmail message IDs
-   - `subject`: `f"[Bookmarks] {author}"` or `f"[Likes] {author}"`
-   - `sender`: `f"{author} (via Bookmarks)"` etc.
-   - `body`: Tweet text
-   - `links`: Only new (not-yet-used) embedded links
+#### Tweet dedup (tweet-URL-based, not article-URL-based)
+
+The dedup input is now `considered_tweet_urls: set[str]` — the set of **tweet URLs** that have previously entered the pipeline. A tweet is skipped if `tweet_url in considered_tweet_urls`. This is more correct than article-URL dedup: the same article can be shared by multiple different tweets, and the article-URL approach would silently skip the second tweet even if it was a different, fresher share.
+
+#### Three tweet types
+
+For each tweet that passes the dedup gate:
+
+| Type | Condition | Treatment |
+|---|---|---|
+| **A — Single link** | Exactly 1 non-x.com embedded link | `fetch_article(url)` → 1 `ArticleCandidate` |
+| **B — Multi-link** | ≥ 2 embedded links | Fetch each non-x.com link → multiple `ArticleCandidate` objects (one per link) |
+| **C — Long-form** | 0 links AND tweet text ≥ 200 words | Tweet body is the article → 1 `ArticleCandidate` |
+| **Dropped** | 0 links AND < 200 words | Skipped silently |
+
+Type B treats multi-link tweets as aggregators (like a curated thread of resources). Each link is fetched independently and becomes its own candidate, scored on its own merits.
 
 ---
 
 ### `agent/__init__.py` — Pipeline Orchestration
 
-**Purpose:** Entry point for the full pipeline. Coordinates all modules.
+**Purpose:** Entry point for the full 5-step pipeline. Coordinates all modules.
 
 ```python
 def main(dry_run: bool = False) -> None:
     settings = load_settings()
     _configure_logging(settings)
 
-    # 1. Load dedup state
+    # ── STEP 1 — FILTER ───────────────────────────────────────────────────────
     digests = load_sent_digests(settings.sent_digests_file)
-    already_processed = already_processed_ids(digests)   # set of Gmail message IDs
-    used_urls = already_used_urls(digests)                # set of article URLs
+    already_processed = already_processed_ids(digests)     # Gmail msg ID fallback
+    score_db = load_score_db(settings.score_db_file)
+    tweet_db = load_considered_tweets(settings.tweet_db_file)
+    considered_tweet_urls = already_considered_tweets(tweet_db)
 
-    # 2. Gmail
     service = get_gmail_service(settings)
-    email_newsletters = fetch_newsletters(service, settings, already_processed)
+    # Gmail query already excludes -label:Newsletter-Reviewed at the API level
+    raw_emails = fetch_newsletters(service, settings, already_processed)
 
-    # 3. X scrape (async, runs headlessly; errors are non-fatal)
     try:
-        asyncio.run(_scrape_x(headless=True, scroll_attempts=..., ...))
+        asyncio.run(_scrape_x(...))
     except Exception as exc:
         log.warning("X scrape failed (skipping X content): %s", exc)
 
-    x_newsletters = load_x_data(settings.x_bookmarks_csv, settings.x_likes_csv, used_urls)
+    # ── STEP 2 — EXPAND ───────────────────────────────────────────────────────
+    candidates: list[ArticleCandidate] = []
+    for email in raw_emails:
+        candidates.extend(extract_email_candidates(email, settings))   # Pass 1 + Pass 2
 
-    # 4. Merge
-    all_newsletters = email_newsletters + x_newsletters
+    x_candidates = load_x_data(
+        settings.x_bookmarks_csv, settings.x_likes_csv,
+        considered_tweet_urls=considered_tweet_urls,   # tweet-URL dedup
+    )
+    candidates.extend(x_candidates)
 
-    # 5. Claude
-    articles, excluded, teaser, quote, quote_attribution = summarise_and_rank(all_newsletters, settings)
+    # ── STEP 3 — SCORE ────────────────────────────────────────────────────────
+    all_scored = score_new_candidates(candidates, score_db, settings)
+    # score_db now contains new entries; save happens at Step 5
 
-    # 6. Build
-    html = build_html(articles, settings.gmail_sender, teaser, quote, quote_attribution)
-    plain = build_plain_text(articles, teaser, quote, quote_attribution)
+    # ── STEP 4 — SELECT ───────────────────────────────────────────────────────
+    eligible = [(c, s) for c, s, _ in all_scored if s >= settings.min_score_threshold]
+    eligible.sort(key=lambda x: x[1], reverse=True)
+    top_articles = eligible[:settings.max_articles]
 
-    # 7. Send (or dry-run)
-    if dry_run:
-        print(html)
-        return
+    teaser, quote, quote_attribution = generate_digest_text(
+        [c for c, _ in top_articles], settings
+    )
 
-    send_digest(service, html, plain, settings)
+    # ── STEP 5 — PERSIST ──────────────────────────────────────────────────────
+    html = build_html(...)
+    plain = build_plain_text(...)
 
-    # 8. Update dedup state
-    record_sent_digest(digests, today_key, email_ids, article_urls)
-    save_sent_digests(settings.sent_digests_file, digests)
+    if not dry_run:
+        send_digest(service, html, plain, settings)
+
+        label_id = ensure_newsletter_label(service)
+        label_and_archive_messages(service, email_msg_ids, label_id)
+
+        record_considered_tweets(tweet_db, today_key, all_tweet_urls)
+        save_considered_tweets(settings.tweet_db_file, tweet_db)
+
+        save_score_db(settings.score_db_file, score_db)
+
+        record_sent_digest(digests, today_key, email_ids, article_urls)
+        save_sent_digests(settings.sent_digests_file, digests)
 ```
 
-**`asyncio.run(_scrape_x(...))`**: The Playwright scraper is async; the main pipeline is synchronous. `asyncio.run()` creates an event loop, runs the coroutine, and returns — bridging async into sync without requiring the entire pipeline to be async.
+**`asyncio.run(_scrape_x(...))`**: The Playwright scraper is async; the main pipeline is synchronous. `asyncio.run()` creates an event loop, runs the coroutine, and returns.
 
-**Error isolation**: X scrape failures are caught and logged as warnings; the pipeline continues with email-only content. Gmail failures abort the run (no service = nothing to send).
+**Error isolation**: X scrape failures are caught and logged as warnings; the pipeline continues with email-only content. Gmail failures abort the run.
 
 ---
 
@@ -785,18 +903,22 @@ The plist uses a fixed Python path — update it if your Python installation loc
 
 ## 12. Tests
 
-**56 unit tests across 3 files.** Run with:
+**128 unit tests across 8 files.** Run with:
 
 ```bash
 make test          # recommended
 pytest tests/ -v   # verbose output
 ```
 
-| File | What's Tested |
-|---|---|
-| `tests/test_ranker.py` | JSON fence stripping, 5-tuple return from `_parse_response`, Claude API mocking, empty input, API errors, body truncation, teaser/quote extraction |
-| `tests/test_extractor.py` | Base64 decoding with padding, recursive MIME walking, plain-text preference over HTML, tracker URL filtering, Substack canonical URL preference, URL cap, trailing punctuation stripping |
-| `tests/test_renderer.py` | HTML structure (title, URL, rank badge, source badge, score pills, tags, nav), dark-mode CSS presence, plain-text formatting, teaser and quote sections |
+| File | Tests | What's Tested |
+|---|---|---|
+| `tests/test_ranker.py` | 17 | JSON fence stripping, `_parse_response` structure, Claude API mocking, empty input, API errors, body truncation, teaser/quote extraction |
+| `tests/test_extractor.py` | 17 | Base64 decoding with padding, recursive MIME walking, plain-text preference over HTML, tracker URL filtering, Substack canonical URL preference, URL cap |
+| `tests/test_renderer.py` | 22 | HTML structure (rank badge, source badge, score pills, tags, nav), dark-mode CSS presence, plain-text formatting, teaser and quote sections |
+| `tests/test_scorer.py` | 20 | Score DB load/save/lookup/store, cache hits skip Claude, partial cache → single batch call, score roundtrip, invalid JSON handling |
+| `tests/test_loader.py` | 25 | Tweet Type A/B/C classification, stale bookmark filtering (14-day), tweet-URL-based dedup, multi-link Type B expansion, short-tweet drop |
+| `tests/test_dedup.py` | 17 | `considered_tweets` load/save/record, 30-day retention pruning, flat set from multi-date DB, `already_considered_tweets` correctness |
+| `tests/test_gmail_labels.py` | 10 | `ensure_newsletter_label` creates missing / returns existing, `label_and_archive_messages` calls `modify()` per message with correct body |
 
 ---
 
