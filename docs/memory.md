@@ -8,12 +8,24 @@
 
 **Owner:** amitd01
 **Repo:** Testios
+**GitHub:** [amitd01/Testios](https://github.com/amitd01/Testios)
+**Mirror:** [amitd01/hiring-pipeline-app](https://github.com/amitd01/hiring-pipeline-app)
 **Contains:** Two full-stack web applications in separate directories
 
 | Project | Directory | Branch | Status |
 |---------|-----------|--------|--------|
 | PFM India (Personal Finance Manager) | `(root backend/ & frontend/)` | `claude/pfm-gmail-integration-24H4a` | Complete, 26 commits |
 | Hiring Pipeline (HCS) | `hiring-pipeline/` | `claude/consultant-ranking-prebriefing-Qitve` | Active development |
+
+### All Branches
+
+| Branch | Purpose | Status |
+|--------|---------|--------|
+| `master` | Main branch | Stable |
+| `claude/consultant-ranking-prebriefing-Qitve` | Hiring Pipeline dev | Active |
+| `claude/pfm-gmail-integration-24H4a` | PFM India project | Complete |
+| `claude/create-hiring-pipeline-video-Pid9t` | Demo video | Archive |
+| `claude/create-product-walkthrough-video-awWci` | Walkthrough video | Archive |
 
 ---
 
@@ -112,6 +124,8 @@ Complete but user's local machine has environment issues (missing API keys, Post
 
 | File | Description |
 |------|-------------|
+| `CLAUDE.md` | AI/developer quick-reference guide |
+| `README.md` | Repository overview and getting started guide |
 | `docs/PRD_V2.md` | PFM India product requirements document |
 | `docs/PRD_V3_HIRING_PIPELINE.md` | Hiring Pipeline product requirements document |
 | `docs/TECHNICAL_DOCS.md` | Hiring Pipeline technical architecture and reference |
@@ -119,7 +133,6 @@ Complete but user's local machine has environment issues (missing API keys, Post
 | `docs/SESSION_SUMMARY_V2.md` | Complete repository session summary (both projects) |
 | `docs/SESSION_LOG.md` | PFM India turn-by-turn session log |
 | `docs/memory.md` | This file — quick context for continuing work |
-| `README.md` | Repository overview and getting started guide |
 
 ---
 
@@ -132,3 +145,7 @@ Complete but user's local machine has environment issues (missing API keys, Post
 5. **Seed data** — Always run seed after migrate to get a working dashboard
 6. **Tests** — Run from `hiring-pipeline/` with `npm test`
 7. **LLM features** — CV scoring works without API key (rule-based), briefing chat does not
+
+---
+
+*Last updated: March 2026*

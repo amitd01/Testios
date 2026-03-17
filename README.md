@@ -1,6 +1,8 @@
-# Testios
+# Testios — Hiring Pipeline & PFM India
 
 Full-stack web application repository containing two projects built with Node.js/Express backends and React 18 frontends.
+
+**GitHub:** [amitd01/Testios](https://github.com/amitd01/Testios) | **Mirror:** [amitd01/hiring-pipeline-app](https://github.com/amitd01/hiring-pipeline-app)
 
 ---
 
@@ -11,6 +13,7 @@ Full-stack web application repository containing two projects built with Node.js
 A hiring pipeline management system for tracking recruitment consultants, managing job requisitions, scoring candidate CVs, conducting AI-powered pre-interview briefings, and analyzing consultant yield.
 
 **Directory:** `hiring-pipeline/`
+**Branch:** `claude/consultant-ranking-prebriefing-Qitve`
 
 **Key features:**
 - Consultant management with yield-based rankings across 8 role families
@@ -93,6 +96,7 @@ A Personal Finance Manager for the Indian market that ingests bank transaction a
 | Technical Architecture | [`docs/TECHNICAL_DOCS.md`](docs/TECHNICAL_DOCS.md) |
 | Session Summary | [`docs/SESSION_SUMMARY_V2.md`](docs/SESSION_SUMMARY_V2.md) |
 | Memory File (AI context) | [`docs/memory.md`](docs/memory.md) |
+| CLAUDE.md (dev guide) | [`CLAUDE.md`](CLAUDE.md) |
 | PFM India PRD | [`docs/PRD_V2.md`](docs/PRD_V2.md) |
 | PFM Session Retrospective | [`docs/SESSION_SUMMARY.md`](docs/SESSION_SUMMARY.md) |
 
@@ -103,33 +107,40 @@ A Personal Finance Manager for the Indian market that ingests bank transaction a
 ```
 Testios/
 ├── README.md
+├── CLAUDE.md                           # AI/developer quick-reference
 ├── docs/
-│   ├── PRD_V2.md                    # PFM India PRD
-│   ├── PRD_V3_HIRING_PIPELINE.md    # Hiring Pipeline PRD
-│   ├── TECHNICAL_DOCS.md            # Technical architecture
-│   ├── SESSION_LOG.md               # PFM session log
-│   ├── SESSION_SUMMARY.md           # PFM retrospective
-│   ├── SESSION_SUMMARY_V2.md        # Full repository summary
-│   └── memory.md                    # AI context file
+│   ├── PRD_V2.md                       # PFM India PRD
+│   ├── PRD_V3_HIRING_PIPELINE.md       # Hiring Pipeline PRD
+│   ├── TECHNICAL_DOCS.md               # Technical architecture
+│   ├── SESSION_LOG.md                  # PFM session log
+│   ├── SESSION_SUMMARY.md             # PFM retrospective
+│   ├── SESSION_SUMMARY_V2.md          # Full repository summary
+│   └── memory.md                       # AI context file
 ├── hiring-pipeline/
-│   ├── package.json                 # Workspace root
+│   ├── package.json                    # Workspace root
 │   ├── backend/
 │   │   ├── src/
-│   │   │   ├── index.js             # Express app
-│   │   │   ├── config/              # DB + env config
-│   │   │   ├── controllers/         # 6 controllers
-│   │   │   ├── models/              # 8 models
-│   │   │   ├── services/            # 4 services
-│   │   │   ├── migrations/          # 3 migrations + seed
-│   │   │   ├── routes/              # Route definitions
-│   │   │   └── middleware/          # JWT auth
-│   │   ├── scripts/                 # Seed + simulation
-│   │   └── __tests__/               # 68 tests, 9 suites
+│   │   │   ├── index.js               # Express app
+│   │   │   ├── config/                # DB + env config
+│   │   │   ├── controllers/           # 6 controllers
+│   │   │   ├── models/                # 8 models
+│   │   │   ├── services/              # 4 services
+│   │   │   ├── migrations/            # 3 migrations + seed
+│   │   │   ├── routes/                # Route definitions
+│   │   │   └── middleware/            # JWT auth
+│   │   ├── scripts/                   # Seed + simulation
+│   │   └── __tests__/                 # 68 tests, 9 suites
 │   └── frontend/
 │       └── src/
-│           ├── pages/               # 7 pages
-│           ├── components/          # 4 components
-│           └── utils/               # API client
+│           ├── pages/                 # 7 pages
+│           ├── components/            # 4 components
+│           └── utils/                 # API client
+├── backend/                            # PFM India backend
+├── frontend/                           # PFM India frontend
+├── Dockerfile
+├── docker-compose.yml
+├── setup.sh
+└── restart.sh
 ```
 
 ---
@@ -144,3 +155,15 @@ npm test
 # Run with coverage
 npx jest --coverage --workspace=backend
 ```
+
+---
+
+## Branches
+
+| Branch | Purpose | Status |
+|--------|---------|--------|
+| `master` | Main branch | Stable |
+| `claude/consultant-ranking-prebriefing-Qitve` | Hiring Pipeline development | Active |
+| `claude/pfm-gmail-integration-24H4a` | PFM India project | Complete |
+| `claude/create-hiring-pipeline-video-Pid9t` | Hiring Pipeline demo video | Archive |
+| `claude/create-product-walkthrough-video-awWci` | Product walkthrough video | Archive |
