@@ -80,7 +80,7 @@ STEP 5 — PERSIST   Label + archive Gmail messages ("Newsletter-Reviewed")
 ### CI/CD
 | File | Purpose |
 |---|---|
-| `.github/workflows/newsletter.yml` | GitHub Actions: runs daily at 05:30 UTC (11:00 AM IST), also `workflow_dispatch` |
+| `.github/workflows/newsletter.yml` | GitHub Actions: runs daily at 03:23 UTC (08:53 AM IST), also `workflow_dispatch` |
 
 ---
 
@@ -99,7 +99,13 @@ Workflow: develop on `dev` → test with dry-run → merge `dev → main` → Gi
 
 | Date | Duration | Result | Notes |
 |---|---|---|---|
-| 2026-03-15 | 4m 2s | ✓ Success | 4 candidates, 1 selected (score 6.8), email sent, commit `bcc492d` |
+| 2026-03-15 | 4m 2s | ✓ Success | 4 candidates, 1 selected (score 6.8), email sent |
+| 2026-03-16 | 3m 51s | ✓ Success | Scheduled run |
+| 2026-03-17 | 45s | ✗ OAuth fail | Gmail token expired (`invalid_grant`) — token refreshed manually |
+| 2026-03-17 | 4m 45s | ✓ Success | Manual dispatch after token refresh; 9 candidates, 4 selected, email sent |
+| 2026-03-18 | 3m 51s | ✓ Success | Scheduled run |
+| 2026-03-19 | 4m 11s | ✓ Success | Scheduled run |
+| 2026-03-20 | 4m 9s | ✓ Success | First run on new 03:23 UTC schedule |
 
 ---
 
