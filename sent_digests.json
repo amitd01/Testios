@@ -1,48 +1,4 @@
 {
-  "2026-03-09": {
-    "message_ids": [
-      "19cd0561cf031653",
-      "19ccebb62c4a17bd",
-      "19cce1ea8770f6c3"
-    ]
-  },
-  "2026-03-10": {
-    "message_ids": [
-      "19cd4e5e7b9259bb",
-      "19cd2e9b7666e9b2"
-    ],
-    "article_urls": [
-      "https://writing.nikunjk.com/p/10x-is-the-new-floor",
-      "https://www.a16z.news/p/top-100-gen-ai-consumer-apps-march",
-      "https://livemint.com/money/personal-finance/itr-forms-ay-2025-26-more-disclosures-details-on-hra-home-loan-tds-11746609511740.html",
-      "https://washingtonpost.com/sports/interactive/2023/chris-evert-martina-navratilova-cancer/",
-      "https://t.co/DydXOyffUQ",
-      "https://mtrajan.substack.com/p/sarvam-open-is-not-sovereign",
-      "https://livemint.com/money/personal-finance/itr-forms-ay-2025-26-more-disclosures-details-on-hra-home-loan-tds-11746609511740.html",
-      "https://washingtonpost.com/sports/interactive/2023/chris-evert-martina-navratilova-cancer/",
-      "https://paulgraham.com/brandage.html",
-      "https://mtrajan.substack.com/p/sarvam-open-is-not-sovereign",
-      "https://t.co/xT9mnpHSxG"
-    ]
-  },
-  "2026-03-11": {
-    "message_ids": [
-      "19cda8e4b0b6de21",
-      "19cd924ccf939273",
-      "19cd8c7b70c8c642",
-      "19cd82dc99c333d3",
-      "19cd8130caede924",
-      "19cd7b53e17a2723",
-      "19cd76bab1d0c1ce"
-    ],
-    "article_urls": [
-      "https://thedailybrief.zerodha.com/p/pentagon-anthropic-and-the-promise",
-      "https://www.a16z.news/p/your-data-agents-need-context",
-      "https://aimaker.substack.com/p/vibe-coding-mistakes",
-      "https://pm2dev.substack.com/p/pm-to-rust-dev-episode-0002-what",
-      "https://paulgraham.com/brandage.html"
-    ]
-  },
   "2026-03-12": {
     "message_ids": [
       "19cdfb5b0cdb16ba",
@@ -97,12 +53,61 @@
       "https://mtrajan.substack.com/p/sarvam-open-is-not-sovereign"
     ]
   },
-  "2026-03-14": {
+  "2026-03-15": {
     "message_ids": [
-      "19ceab1fb8a4c4e1"
+      "19cefec833bb6b26",
+      "19cef8f91a4ac4d0",
+      "19cee82f9cf089d3",
+      "19ced20729ac0c49",
+      "19cece1f2d14cc7a",
+      "19cec8d6479e8dea"
     ],
     "article_urls": [
-      "https://thedailybrief.zerodha.com/p/whats-going-on-with-private-credit"
+      "https://thedailybrief.zerodha.com/p/the-chokepoint-that-powers-the-global",
+      "https://emergingai.substack.com/p/perplexity-computer-vs-claude-pick",
+      "https://open.substack.com/pub/emergingai/p/the-full-tutorial-6-ai-agents-that?utm_campaign=post-expanded-share&utm_medium=post%20viewer",
+      "email:19cee82f9cf089d3",
+      "https://emergingai.substack.com/p/starting-ai-today-this-is-exactly"
     ]
+  },
+  "2026-03-16": {
+    "message_ids": [
+      "19cf452ca7af8b2f",
+      "19cf29b847c03eb9",
+      "19cf20f1747f0d45",
+      "19cf1c99c2259d16"
+    ],
+    "article_urls": [
+      "https://emergingai.substack.com/p/openclaw-masterclass",
+      "https://thedailybrief.zerodha.com/p/trimming-the-chinese-wall",
+      "https://aimaker.substack.com/p/ai-agent-vs-chatbot-content-research-agent"
+    ]
+  },
+  "2026-03-18": {
+    "message_ids": [
+      "19cfe9be7888d1b5",
+      "19cfc4c7f68556e2",
+      "19cfc3bf2ed0ac65",
+      "19cfc356dd2d803d",
+      "19cfc2469d83bbfa",
+      "19cfc1dd45313abf"
+    ],
+    "article_urls": [
+      "https://emergingai.substack.com/p/how-a-skill-graph-can-turn-ai-into",
+      "https://speedrun.substack.com/p/will-ai-kill-spreadsheets",
+      "https://marcrandolph.substack.com/p/the-two-most-powerful-words-in-any",
+      "https://thedailybrief.zerodha.com/p/the-new-rules-of-paying-for-electricity",
+      "https://www.a16z.news/p/your-product-wont-sell-itself"
+    ]
+  },
+  "2026-03-19": {
+    "message_ids": [
+      "19d040c38077476f",
+      "19d03f6449d470e0",
+      "19d03cadf2ea7a4a",
+      "19d014416f76b53c",
+      "19d00e85ca748deb"
+    ],
+    "article_urls": []
   }
 }
