@@ -854,7 +854,7 @@ Runs only the X scraping step. Used for initial X session setup and for refreshi
 ```yaml
 on:
   schedule:
-    - cron: '30 5 * * *'   # 05:30 UTC = 11:00 AM IST
+    - cron: '23 3 * * *'   # 03:23 UTC = 08:53 AM IST
   workflow_dispatch:         # manual trigger from GitHub Actions UI
 ```
 

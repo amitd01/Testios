@@ -38,14 +38,6 @@
       "https://mtrajan.substack.com/p/sarvam-open-is-not-sovereign"
     ]
   },
-  "2026-03-14": {
-    "message_ids": [
-      "19ceab1fb8a4c4e1"
-    ],
-    "article_urls": [
-      "https://thedailybrief.zerodha.com/p/whats-going-on-with-private-credit"
-    ]
-  },
   "2026-03-15": {
     "message_ids": [
       "19cefec833bb6b26",
@@ -53,67 +45,58 @@
       "19cee82f9cf089d3",
       "19ced20729ac0c49",
       "19cece1f2d14cc7a",
-      "19cec8d6479e8dea::https://theheadandtale.com/fintech-news/cbi-searches-15-locations-to-investigate-cyber-fraud-network/",
-      "19cec8d6479e8dea::https://theheadandtale.com/fintech-news/nse-appoints-20-bankers-for-proposed-ipo/",
-      "19cec8d6479e8dea::https://theheadandtale.com/fintech-news/neobank-fi-closes-banking-services-on-its-platform/",
-      "19cec8d6479e8dea::https://theheadandtale.com/fintech-news/slice-appoints-former-sbi-chief-gm-sreedevi-pillai-as-independent-director/",
-      "19cec8d6479e8dea::https://theheadandtale.com/fintech-news/cred-gets-rbi-s-final-nod-to-operate-as-payment-aggregator/",
-      "19cec8d6479e8dea::https://theheadandtale.com/fintech-news/payu-partners-with-corover-ai-to-enable-ai-led-agentic-payments/",
-      "19cec8d6479e8dea::https://CoRover.ai",
-      "19cec8d6479e8dea::https://theheadandtale.com/fintech-news/warbug-pincus-backed-truhome-finance-files-draft-papers-for-ipo/",
-      "19cf0d791b070731"
+      "19cec8d6479e8dea"
     ],
     "article_urls": [
       "https://thedailybrief.zerodha.com/p/the-chokepoint-that-powers-the-global",
-      "https://emergingai.substack.com/p/starting-ai-today-this-is-exactly",
       "https://emergingai.substack.com/p/perplexity-computer-vs-claude-pick",
-      "https://theheadandtale.com/fintech-news/cbi-searches-15-locations-to-investigate-cyber-fraud-network/",
-      "https://theheadandtale.com/fintech-news/neobank-fi-closes-banking-services-on-its-platform/",
-      "https://theheadandtale.com/fintech-news/payu-partners-with-corover-ai-to-enable-ai-led-agentic-payments/",
-      "https://theheadandtale.com/fintech-news/cred-gets-rbi-s-final-nod-to-operate-as-payment-aggregator/",
-      "https://a4d65a79.click.convertkit-mail4.com/92urk4vnofnh6wd0n8a5izdr7o7lhwh285w/x0hph6he2rxq5nf5/aHR0cHM6Ly9wb2RjYXN0cy5hcHBsZS5jb20vdXMvcG9kY2FzdC9vdXRsaWVycy1qLXctbWFycmlvdHQtYnVpbGRpbmctYW4tZW1waXJlLXdpdGhvdXQvaWQ5OTAxNDk0ODE_aT0xMDAwNzU0NDM4MDkz"
+      "https://open.substack.com/pub/emergingai/p/the-full-tutorial-6-ai-agents-that?utm_campaign=post-expanded-share&utm_medium=post%20viewer",
+      "email:19cee82f9cf089d3",
+      "https://emergingai.substack.com/p/starting-ai-today-this-is-exactly"
     ]
   },
   "2026-03-16": {
-    "message_ids": [],
-    "article_urls": []
-  },
-  "2026-03-17": {
     "message_ids": [
-      "19cfbcef60de65e4",
-      "19cfb27aae1b3a0d",
-      "19cfa254c9ee82cb",
-      "19cf979439ba5eb9",
-      "19cf709cf0872b3d",
-      "19cf6f81de2947cd"
+      "19cf452ca7af8b2f",
+      "19cf29b847c03eb9",
+      "19cf20f1747f0d45",
+      "19cf1c99c2259d16"
     ],
     "article_urls": [
-      "https://www.a16z.news/p/why-the-world-still-runs-on-sap",
-      "https://everythingcoliving.substack.com/p/goldman-sachs-just-bought-a-coliving",
-      "https://nithinkamath.substack.com/p/do-banking-apps-really-need-all-these",
-      "https://aimaker.substack.com/p/notebooklm-hidden-features-gemini-gems-antigravity-guide"
+      "https://emergingai.substack.com/p/openclaw-masterclass",
+      "https://thedailybrief.zerodha.com/p/trimming-the-chinese-wall",
+      "https://aimaker.substack.com/p/ai-agent-vs-chatbot-content-research-agent"
     ]
   },
   "2026-03-18": {
-    "message_ids": [],
-    "article_urls": []
+    "message_ids": [
+      "19cfe9be7888d1b5",
+      "19cfc4c7f68556e2",
+      "19cfc3bf2ed0ac65",
+      "19cfc356dd2d803d",
+      "19cfc2469d83bbfa",
+      "19cfc1dd45313abf"
+    ],
+    "article_urls": [
+      "https://emergingai.substack.com/p/how-a-skill-graph-can-turn-ai-into",
+      "https://speedrun.substack.com/p/will-ai-kill-spreadsheets",
+      "https://marcrandolph.substack.com/p/the-two-most-powerful-words-in-any",
+      "https://thedailybrief.zerodha.com/p/the-new-rules-of-paying-for-electricity",
+      "https://www.a16z.news/p/your-product-wont-sell-itself"
+    ]
   },
   "2026-03-19": {
-    "message_ids": [],
+    "message_ids": [
+      "19d040c38077476f",
+      "19d03f6449d470e0",
+      "19d03cadf2ea7a4a",
+      "19d014416f76b53c",
+      "19d00e85ca748deb"
+    ],
     "article_urls": []
   },
   "2026-03-20": {
-    "message_ids": [
-      "19d097c69e5b7674",
-      "19d08e5c9609722f",
-      "19d07b53c502fbda",
-      "19d0715ef22aa516",
-      "19d067514b329711",
-      "19d0670de168e8d4",
-      "19d06689916957e7",
-      "19d062d3a45862c7",
-      "19d0622daa7c6355"
-    ],
+    "message_ids": [],
     "article_urls": []
   }
 }
