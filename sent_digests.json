@@ -1,19 +1,4 @@
 {
-  "2026-03-12": {
-    "message_ids": [
-      "19cdfb5b0cdb16ba",
-      "19cdd36be098cecf",
-      "19cdd33f3f72cb50",
-      "19cdd2f838e1b22f",
-      "19cdc7c718f3f411"
-    ],
-    "article_urls": [
-      "https://navalsarchive.substack.com/p/the-word-that-forgot-its-own-name",
-      "https://www.a16z.news/p/the-world-needs-an-ai-lab-for-data",
-      "https://thedailybrief.zerodha.com/p/the-iran-war-and-indias-fertilizer",
-      "https://pm2dev.substack.com/p/pm-to-rust-dev-episode-0003-rtfm"
-    ]
-  },
   "2026-03-13": {
     "message_ids": [
       "19ce549857f38e45",
@@ -108,6 +93,10 @@
       "19d014416f76b53c",
       "19d00e85ca748deb"
     ],
+    "article_urls": []
+  },
+  "2026-03-20": {
+    "message_ids": [],
     "article_urls": []
   }
 }
