@@ -1,0 +1,160 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f5f6fa;
+  color: #2d3436;
+  line-height: 1.5;
+}
+
+a { color: #0984e3; text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+
+.card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.btn {
+  display: inline-block;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: opacity 0.15s;
+}
+.btn:hover { opacity: 0.85; }
+.btn-primary { background: #0984e3; color: #fff; }
+.btn-success { background: #00b894; color: #fff; }
+.btn-danger { background: #d63031; color: #fff; }
+.btn-secondary { background: #636e72; color: #fff; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.badge-submitted { background: #dfe6e9; color: #636e72; }
+.badge-screened { background: #ffeaa7; color: #636e72; }
+.badge-shortlisted { background: #81ecec; color: #00695c; }
+.badge-sent_to_manager { background: #a29bfe; color: #fff; }
+.badge-interview_scheduled { background: #74b9ff; color: #fff; }
+.badge-hired { background: #00b894; color: #fff; }
+.badge-rejected { background: #fab1a0; color: #d63031; }
+
+.badge-pending { background: #dfe6e9; color: #636e72; }
+.badge-in_progress { background: #ffeaa7; color: #636e72; }
+.badge-completed { background: #00b894; color: #fff; }
+.badge-failed { background: #fab1a0; color: #d63031; }
+
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #eee; }
+th { font-weight: 600; font-size: 12px; text-transform: uppercase; color: #636e72; }
+
+input, select, textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+textarea { min-height: 80px; resize: vertical; }
+
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-weight: 500; margin-bottom: 4px; font-size: 13px; }
+
+.flex { display: flex; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.gap-2 { gap: 8px; }
+.gap-4 { gap: 16px; }
+.mt-2 { margin-top: 8px; }
+.mt-4 { margin-top: 16px; }
+.mb-4 { margin-bottom: 16px; }
+
+h1 { font-size: 24px; font-weight: 700; }
+h2 { font-size: 20px; font-weight: 600; }
+h3 { font-size: 16px; font-weight: 600; }
+
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 13px;
+}
+.rank-1 { background: #ffd700; color: #333; }
+.rank-2 { background: #c0c0c0; color: #333; }
+.rank-3 { background: #cd7f32; color: #fff; }
+.rank-other { background: #dfe6e9; color: #636e72; }
+
+.pipeline-board {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+  overflow-x: auto;
+}
+.pipeline-column {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px;
+  min-width: 180px;
+}
+.pipeline-column h4 {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #636e72;
+  margin-bottom: 8px;
+}
+.pipeline-card {
+  background: #fff;
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+  font-size: 13px;
+}
+
+.chat-container {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 20px;
+}
+.chat-messages {
+  max-height: 500px;
+  overflow-y: auto;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+.chat-message {
+  margin-bottom: 12px;
+  display: flex;
+}
+.chat-message.user { justify-content: flex-end; }
+.chat-message .bubble {
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.chat-message.user .bubble { background: #0984e3; color: #fff; }
+.chat-message.assistant .bubble { background: #fff; border: 1px solid #ddd; }
+.chat-input { display: flex; gap: 8px; }
+.chat-input input { flex: 1; margin-bottom: 0; }

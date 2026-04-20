@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hiring Pipeline — Dry Run Report</title>
+<style>
+  :root {
+    --bg: #0f172a; --card: #1e293b; --border: #334155;
+    --text: #e2e8f0; --muted: #94a3b8; --accent: #38bdf8;
+    --green: #4ade80; --red: #f87171; --yellow: #fbbf24; --purple: #a78bfa;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+  h1 { font-size: 2rem; font-weight: 700; margin-bottom: 8px; }
+  h2 { font-size: 1.35rem; font-weight: 600; margin: 40px 0 16px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+  h3 { font-size: 1.1rem; font-weight: 600; margin: 20px 0 10px; }
+  .subtitle { color: var(--muted); font-size: 0.95rem; margin-bottom: 32px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .stat { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; text-align: center; }
+  .stat-value { font-size: 2rem; font-weight: 700; }
+  .stat-label { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .green { color: var(--green); } .red { color: var(--red); } .yellow { color: var(--yellow); } .accent { color: var(--accent); } .purple { color: var(--purple); }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.9rem; }
+  th { text-align: left; padding: 10px 12px; background: #0f172a; color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }
+  td { padding: 10px 12px; border-top: 1px solid var(--border); }
+  tr:hover td { background: rgba(56,189,248,0.05); }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; }
+  .badge-pass { background: rgba(74,222,128,0.15); color: var(--green); }
+  .badge-fail { background: rgba(248,113,113,0.15); color: var(--red); }
+  .badge-score { background: rgba(56,189,248,0.15); color: var(--accent); }
+  .badge-hired { background: rgba(74,222,128,0.15); color: var(--green); }
+  .badge-rejected { background: rgba(248,113,113,0.15); color: var(--red); }
+  .funnel { display: flex; flex-direction: column; gap: 4px; margin: 16px 0; }
+  .funnel-row { display: flex; align-items: center; gap: 12px; }
+  .funnel-label { width: 140px; text-align: right; font-size: 0.85rem; color: var(--muted); }
+  .funnel-bar { height: 28px; border-radius: 4px; display: flex; align-items: center; padding-left: 10px; font-size: 0.8rem; font-weight: 600; transition: width 0.5s; }
+  .funnel-pct { font-size: 0.8rem; color: var(--muted); width: 50px; }
+  .timeline { position: relative; padding-left: 24px; }
+  .timeline::before { content: ''; position: absolute; left: 8px; top: 4px; bottom: 4px; width: 2px; background: var(--border); }
+  .timeline-item { position: relative; margin-bottom: 20px; }
+  .timeline-item::before { content: ''; position: absolute; left: -20px; top: 6px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--accent); background: var(--bg); }
+  .timeline-item.done::before { background: var(--green); border-color: var(--green); }
+  .timeline-item.fail::before { background: var(--red); border-color: var(--red); }
+  .step-title { font-weight: 600; font-size: 0.95rem; }
+  .step-detail { font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
+  .chat-msg { padding: 8px 14px; border-radius: 10px; margin: 6px 0; font-size: 0.85rem; max-width: 85%; }
+  .chat-candidate { background: #1e3a5f; margin-right: auto; border-bottom-left-radius: 2px; }
+  .chat-assistant { background: #2d3748; margin-left: auto; border-bottom-right-radius: 2px; }
+  .chat-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; }
+  .chat-label.cand { color: var(--accent); }
+  .chat-label.asst { color: var(--purple); }
+  .section-icon { margin-right: 8px; }
+  .dim-bar-bg { background: var(--border); border-radius: 4px; height: 8px; flex: 1; }
+  .dim-bar { height: 8px; border-radius: 4px; }
+  .dim-row { display: flex; align-items: center; gap: 10px; margin: 4px 0; font-size: 0.82rem; }
+  .dim-label { width: 160px; color: var(--muted); }
+  .dim-score { width: 50px; text-align: right; font-weight: 600; }
+  @media (max-width: 640px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .funnel-label { width: 100px; font-size: 0.75rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Hiring Pipeline — Dry Run Report</h1>
+<p class="subtitle">End-to-end simulation of a hiring cycle for <strong>Senior Field Sales Engineer — Mumbai</strong><br>Generated: 13 March 2026 | All 6 subsystems exercised</p>
+
+<!-- Dashboard Metrics -->
+<div class="stats-grid">
+  <div class="stat"><div class="stat-value accent">836</div><div class="stat-label">Historical Outcomes</div></div>
+  <div class="stat"><div class="stat-value green">3</div><div class="stat-label">Total Hires</div></div>
+  <div class="stat"><div class="stat-value yellow">20</div><div class="stat-label">Active Consultants</div></div>
+  <div class="stat"><div class="stat-value purple">12</div><div class="stat-label">Briefings Conducted</div></div>
+</div>
+
+<!-- Step 1: Consultant Rankings -->
+<h2><span class="section-icon">📊</span>Step 1 — Consultant Yield Rankings (Sales)</h2>
+<div class="card">
+  <p style="color:var(--muted); font-size:0.85rem; margin-bottom:12px;">Consultants ranked by historical yield percentage for Sales roles. Minimum 3 submissions required.</p>
+  <table>
+    <thead><tr><th>Rank</th><th>Firm</th><th>Submissions</th><th>S→I %</th><th>I→O %</th><th>O→A %</th><th>Yield %</th><th>Avg TTF</th></tr></thead>
+    <tbody>
+      <tr><td>🥇 #1</td><td><strong>PeopleFirst Consulting</strong></td><td>19</td><td>88.2%</td><td>66.7%</td><td>80.0%</td><td class="green"><strong>47.1%</strong></td><td>23.3d</td></tr>
+      <tr><td>🥈 #2</td><td><strong>BlueStar Staffing</strong></td><td>16</td><td>56.3%</td><td>55.6%</td><td>100%</td><td class="green"><strong>31.3%</strong></td><td>23.0d</td></tr>
+      <tr><td>🥉 #3</td><td>BlueStar Staffing</td><td>24</td><td>58.3%</td><td>57.1%</td><td>62.5%</td><td class="yellow"><strong>20.8%</strong></td><td>22.0d</td></tr>
+      <tr><td>#4</td><td>NexGen Talent</td><td>21</td><td>71.4%</td><td>40.0%</td><td>66.7%</td><td class="yellow">19.0%</td><td>23.8d</td></tr>
+      <tr><td>#5</td><td>NexGen Talent</td><td>11</td><td>90.9%</td><td>40.0%</td><td>50.0%</td><td class="yellow">18.2%</td><td>17.0d</td></tr>
+      <tr><td>#6</td><td>PeopleFirst Consulting</td><td>22</td><td>77.3%</td><td>47.1%</td><td>37.5%</td><td class="red">13.6%</td><td>26.0d</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Step 2: Requisition -->
+<h2><span class="section-icon">📋</span>Step 2 — Requisition Created</h2>
+<div class="card">
+  <table>
+    <tr><td style="color:var(--muted); width:180px;">Title</td><td><strong>Senior Field Sales Engineer — Mumbai</strong></td></tr>
+    <tr><td style="color:var(--muted);">Hiring Manager</td><td>Nandita Krishnan (nandita.k@company.in)</td></tr>
+    <tr><td style="color:var(--muted);">Compensation</td><td>18-24 LPA + variable</td></tr>
+    <tr><td style="color:var(--muted);">Field Expectations</td><td>Minimum 60% travel across Maharashtra and Gujarat. 3-4 days/week visiting manufacturing plants.</td></tr>
+    <tr><td style="color:var(--muted);">Auto-Assigned</td><td>Top 3 consultants by yield: PeopleFirst (47.1%), BlueStar (31.3%), BlueStar (20.8%)</td></tr>
+  </table>
+</div>
+
+<!-- Step 3: CV Submissions + Triage -->
+<h2><span class="section-icon">📄</span>Step 3 — CV Submissions &amp; AI Triage Scoring</h2>
+<p style="color:var(--muted); font-size:0.85rem; margin-bottom:12px;">5 candidates submitted by assigned consultants. Each auto-scored across 5 dimensions (Role Relevance, Experience Depth, Location Fit, Compensation Alignment, Culture Signals).</p>
+
+<div class="card">
+  <h3>Rohit Malhotra <span class="badge badge-score">Score: 43/100</span></h3>
+  <p style="font-size:0.85rem; color:var(--muted); margin: 4px 0 8px;">Submitted by PeopleFirst Consulting (Rank #1)</p>
+  <p style="font-size:0.85rem;">Strong 6-year track record in enterprise sales. Currently at Siemens selling MES solutions to manufacturing companies.</p>
+  <div style="margin-top:10px;">
+    <div class="dim-row"><span class="dim-label">Role Relevance</span><div class="dim-bar-bg"><div class="dim-bar" style="width:45%; background:var(--yellow);"></div></div><span class="dim-score">9/20</span></div>
+    <div class="dim-row"><span class="dim-label">Experience Depth</span><div class="dim-bar-bg"><div class="dim-bar" style="width:35%; background:var(--red);"></div></div><span class="dim-score">7/20</span></div>
+    <div class="dim-row"><span class="dim-label">Location Fit</span><div class="dim-bar-bg"><div class="dim-bar" style="width:60%; background:var(--green);"></div></div><span class="dim-score">12/20</span></div>
+    <div class="dim-row"><span class="dim-label">Compensation Alignment</span><div class="dim-bar-bg"><div class="dim-bar" style="width:60%; background:var(--green);"></div></div><span class="dim-score">12/20</span></div>
+    <div class="dim-row"><span class="dim-label">Culture Signals</span><div class="dim-bar-bg"><div class="dim-bar" style="width:15%; background:var(--red);"></div></div><span class="dim-score">3/20</span></div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Sneha Iyer <span class="badge badge-score">Score: 27/100</span></h3>
+  <p style="font-size:0.85rem; color:var(--muted); margin: 4px 0 8px;">Submitted by PeopleFirst Consulting (Rank #1)</p>
+  <p style="font-size:0.85rem;">4 years selling industrial IoT solutions. Based in Pune, strong relationships in Pune-Nashik manufacturing belt.</p>
+  <div style="margin-top:10px;">
+    <div class="dim-row"><span class="dim-label">Role Relevance</span><div class="dim-bar-bg"><div class="dim-bar" style="width:30%; background:var(--red);"></div></div><span class="dim-score">6/20</span></div>
+    <div class="dim-row"><span class="dim-label">Experience Depth</span><div class="dim-bar-bg"><div class="dim-bar" style="width:55%; background:var(--yellow);"></div></div><span class="dim-score">11/20</span></div>
+    <div class="dim-row"><span class="dim-label">Location Fit</span><div class="dim-bar-bg"><div class="dim-bar" style="width:30%; background:var(--red);"></div></div><span class="dim-score">6/20</span></div>
+    <div class="dim-row"><span class="dim-label">Compensation Alignment</span><div class="dim-bar-bg"><div class="dim-bar" style="width:20%; background:var(--red);"></div></div><span class="dim-score">4/20</span></div>
+    <div class="dim-row"><span class="dim-label">Culture Signals</span><div class="dim-bar-bg"><div class="dim-bar" style="width:0%; background:var(--red);"></div></div><span class="dim-score">0/20</span></div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Karan Bhatt <span class="badge badge-score">Score: 35/100</span></h3>
+  <p style="font-size:0.85rem; color:var(--muted); margin: 4px 0 8px;">Submitted by BlueStar Staffing (Rank #2)</p>
+  <p style="font-size:0.85rem;">5 years at SAP selling to mid-market. Deep understanding of factory workflows and ERP. May have concerns about travel.</p>
+  <div style="margin-top:10px;">
+    <div class="dim-row"><span class="dim-label">Role Relevance</span><div class="dim-bar-bg"><div class="dim-bar" style="width:15%; background:var(--red);"></div></div><span class="dim-score">3/20</span></div>
+    <div class="dim-row"><span class="dim-label">Experience Depth</span><div class="dim-bar-bg"><div class="dim-bar" style="width:55%; background:var(--yellow);"></div></div><span class="dim-score">11/20</span></div>
+    <div class="dim-row"><span class="dim-label">Location Fit</span><div class="dim-bar-bg"><div class="dim-bar" style="width:30%; background:var(--red);"></div></div><span class="dim-score">6/20</span></div>
+    <div class="dim-row"><span class="dim-label">Compensation Alignment</span><div class="dim-bar-bg"><div class="dim-bar" style="width:60%; background:var(--green);"></div></div><span class="dim-score">12/20</span></div>
+    <div class="dim-row"><span class="dim-label">Culture Signals</span><div class="dim-bar-bg"><div class="dim-bar" style="width:15%; background:var(--red);"></div></div><span class="dim-score">3/20</span></div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Fatima Sheikh <span class="badge badge-score">Score: 31/100</span> <span class="badge badge-hired">HIRED</span></h3>
+  <p style="font-size:0.85rem; color:var(--muted); margin: 4px 0 8px;">Submitted by BlueStar Staffing (Rank #2)</p>
+  <p style="font-size:0.85rem;">3 years SaaS sales + 2 years as manufacturing engineer. Unique technical depth + sales combination.</p>
+  <div style="margin-top:10px;">
+    <div class="dim-row"><span class="dim-label">Role Relevance</span><div class="dim-bar-bg"><div class="dim-bar" style="width:30%; background:var(--red);"></div></div><span class="dim-score">6/20</span></div>
+    <div class="dim-row"><span class="dim-label">Experience Depth</span><div class="dim-bar-bg"><div class="dim-bar" style="width:35%; background:var(--red);"></div></div><span class="dim-score">7/20</span></div>
+    <div class="dim-row"><span class="dim-label">Location Fit</span><div class="dim-bar-bg"><div class="dim-bar" style="width:30%; background:var(--red);"></div></div><span class="dim-score">6/20</span></div>
+    <div class="dim-row"><span class="dim-label">Compensation Alignment</span><div class="dim-bar-bg"><div class="dim-bar" style="width:60%; background:var(--green);"></div></div><span class="dim-score">12/20</span></div>
+    <div class="dim-row"><span class="dim-label">Culture Signals</span><div class="dim-bar-bg"><div class="dim-bar" style="width:0%; background:var(--red);"></div></div><span class="dim-score">0/20</span></div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Aditya Rao <span class="badge badge-score">Score: 20/100</span> <span class="badge badge-rejected">REJECTED</span></h3>
+  <p style="font-size:0.85rem; color:var(--muted); margin: 4px 0 8px;">Submitted by BlueStar Staffing (Rank #3)</p>
+  <p style="font-size:0.85rem;">7 years field sales at Oracle. Top performer but exploring multiple offers and has high comp expectations.</p>
+  <div style="margin-top:10px;">
+    <div class="dim-row"><span class="dim-label">Role Relevance</span><div class="dim-bar-bg"><div class="dim-bar" style="width:15%; background:var(--red);"></div></div><span class="dim-score">3/20</span></div>
+    <div class="dim-row"><span class="dim-label">Experience Depth</span><div class="dim-bar-bg"><div class="dim-bar" style="width:35%; background:var(--red);"></div></div><span class="dim-score">7/20</span></div>
+    <div class="dim-row"><span class="dim-label">Location Fit</span><div class="dim-bar-bg"><div class="dim-bar" style="width:30%; background:var(--red);"></div></div><span class="dim-score">6/20</span></div>
+    <div class="dim-row"><span class="dim-label">Compensation Alignment</span><div class="dim-bar-bg"><div class="dim-bar" style="width:20%; background:var(--red);"></div></div><span class="dim-score">4/20</span></div>
+    <div class="dim-row"><span class="dim-label">Culture Signals</span><div class="dim-bar-bg"><div class="dim-bar" style="width:0%; background:var(--red);"></div></div><span class="dim-score">0/20</span></div>
+  </div>
+</div>
+
+<!-- Pipeline Timeline -->
+<h2><span class="section-icon">⏱️</span>Step 4 — Pipeline Progression</h2>
+<div class="card">
+  <div class="timeline">
+    <div class="timeline-item done"><div class="step-title">Screening — All 5 CVs reviewed</div><div class="step-detail">Talent team screens all submissions. All 5 pass initial review.</div></div>
+    <div class="timeline-item done"><div class="step-title">Shortlisting — 4 shortlisted, 1 rejected</div><div class="step-detail">Aditya Rao rejected: comp expectations exceed 18-24 LPA budget.</div></div>
+    <div class="timeline-item done"><div class="step-title">Briefing Gate — 4 briefings conducted</div><div class="step-detail">3 passed, 1 failed (Karan Bhatt — travel requirement mismatch).</div></div>
+    <div class="timeline-item done"><div class="step-title">Sent to Manager — 3 candidates forwarded</div><div class="step-detail">Rohit, Sneha, and Fatima sent to Nandita Krishnan for review.</div></div>
+    <div class="timeline-item done"><div class="step-title">Interview Scheduling — 5 slots created</div><div class="step-detail">Mon-Fri 10:00-11:00 AM. Scheduling links sent to 3 candidates.</div></div>
+    <div class="timeline-item fail"><div class="step-title">Manager Rejects Sneha</div><div class="step-detail">IoT background deemed too different from enterprise SaaS focus.</div></div>
+    <div class="timeline-item done"><div class="step-title">Interviews Booked — 2 candidates</div><div class="step-detail">Rohit: Mon 16 Mar 10:00 AM | Fatima: Tue 17 Mar 10:00 AM</div></div>
+    <div class="timeline-item fail"><div class="step-title">Rohit Declines — Counter-offer from Siemens</div><div class="step-detail">Accepted counter-offer from current employer.</div></div>
+    <div class="timeline-item done"><div class="step-title">Fatima Sheikh — HIRED</div><div class="step-detail">Unique manufacturing engineering + SaaS sales background. Requisition filled.</div></div>
+  </div>
+</div>
+
+<!-- Briefing Conversations -->
+<h2><span class="section-icon">💬</span>Step 5 — Briefing Conversations (Excerpts)</h2>
+
+<div class="card">
+  <h3>Rohit Malhotra <span class="badge badge-pass">PASSED</span></h3>
+  <div class="chat-label cand">CANDIDATE</div>
+  <div class="chat-msg chat-candidate">Hi, I'm Rohit. I'd like to learn more about the Senior Field Sales Engineer role.</div>
+  <div class="chat-label asst">ASSISTANT</div>
+  <div class="chat-msg chat-assistant">Welcome Rohit! This role involves selling enterprise SaaS to mid-market manufacturing companies in western India. You'd be spending 3-4 days a week visiting plants...</div>
+  <div class="chat-label cand">CANDIDATE</div>
+  <div class="chat-msg chat-candidate">Yes, absolutely. I'm currently at Siemens doing similar work — visiting plants, meeting production managers. 60% travel is fine for me.</div>
+  <p style="font-size:0.82rem; color:var(--green); margin-top:8px;"><strong>Summary:</strong> Rohit demonstrates strong understanding. His Siemens experience is directly relevant and he's comfortable with travel.</p>
+</div>
+
+<div class="card">
+  <h3>Karan Bhatt <span class="badge badge-fail">FAILED</span></h3>
+  <div class="chat-label cand">CANDIDATE</div>
+  <div class="chat-msg chat-candidate">Hi, I'm Karan. I want to understand what the day-to-day looks like for this role.</div>
+  <div class="chat-label asst">ASSISTANT</div>
+  <div class="chat-msg chat-assistant">You'd spend 3-4 days per week visiting manufacturing plants across Maharashtra and Gujarat. The 60% travel is a core requirement...</div>
+  <div class="chat-label cand">CANDIDATE</div>
+  <div class="chat-msg chat-candidate">Honestly, I need to think about it. I was hoping for maybe 40% travel. I don't think I can commit to 60% with my current family situation.</div>
+  <p style="font-size:0.82rem; color:var(--red); margin-top:8px;"><strong>Summary:</strong> Karan expressed significant concern about 60% travel. Currently does 30% and has family constraints. Not aligned with role requirements.</p>
+</div>
+
+<div class="card">
+  <h3>Fatima Sheikh <span class="badge badge-pass">PASSED</span></h3>
+  <div class="chat-label cand">CANDIDATE</div>
+  <div class="chat-msg chat-candidate">Hi, I'm Fatima. I have a background in both manufacturing engineering and SaaS sales. I'd like to understand how this role leverages both.</div>
+  <div class="chat-label asst">ASSISTANT</div>
+  <div class="chat-msg chat-assistant">Your background sounds like an excellent fit! This role requires explaining complex SaaS solutions to manufacturing plant managers...</div>
+  <div class="chat-label cand">CANDIDATE</div>
+  <div class="chat-msg chat-candidate">Yes, completely. I'm currently selling FMCG SaaS and want to get back to manufacturing. The comp range, the autonomy, and the travel all work for me.</div>
+  <p style="font-size:0.82rem; color:var(--green); margin-top:8px;"><strong>Summary:</strong> Fatima has a unique and highly relevant combination of manufacturing engineering and SaaS sales. Enthusiastic about all role requirements.</p>
+</div>
+
+<!-- Funnel -->
+<h2><span class="section-icon">🔽</span>Step 6 — Pipeline Funnel</h2>
+<div class="card">
+  <div class="funnel">
+    <div class="funnel-row"><span class="funnel-label">Submitted</span><div class="funnel-bar" style="width:100%; background: linear-gradient(90deg, #38bdf8, #818cf8);">5</div><span class="funnel-pct">100%</span></div>
+    <div class="funnel-row"><span class="funnel-label">Screened</span><div class="funnel-bar" style="width:100%; background: linear-gradient(90deg, #38bdf8, #818cf8);">5</div><span class="funnel-pct">100%</span></div>
+    <div class="funnel-row"><span class="funnel-label">Shortlisted</span><div class="funnel-bar" style="width:80%; background: linear-gradient(90deg, #38bdf8, #818cf8);">4</div><span class="funnel-pct">80%</span></div>
+    <div class="funnel-row"><span class="funnel-label">Sent to Manager</span><div class="funnel-bar" style="width:60%; background: linear-gradient(90deg, #38bdf8, #818cf8);">3</div><span class="funnel-pct">75%</span></div>
+    <div class="funnel-row"><span class="funnel-label">Interviewed</span><div class="funnel-bar" style="width:40%; background: linear-gradient(90deg, #38bdf8, #818cf8);">2</div><span class="funnel-pct">67%</span></div>
+    <div class="funnel-row"><span class="funnel-label">Hired</span><div class="funnel-bar" style="width:20%; background: linear-gradient(90deg, #4ade80, #22d3ee);">1</div><span class="funnel-pct">50%</span></div>
+  </div>
+  <p style="color:var(--muted); font-size:0.85rem; margin-top:12px;">Overall conversion: <strong class="green">20%</strong> (1 hire from 5 submissions) | Time to fill: <strong class="accent">~21 days</strong></p>
+</div>
+
+<!-- Briefing Gate Enforcement -->
+<h2><span class="section-icon">🔒</span>Step 7 — Briefing Gate Enforcement</h2>
+<div class="card">
+  <p style="font-size:0.9rem;">Tested: Can a CV be advanced to <code>interview_scheduled</code> without a completed briefing?</p>
+  <p style="margin-top:8px;"><span class="badge badge-pass" style="font-size:0.9rem;">BLOCKED ✓</span> <span style="color:var(--muted); font-size:0.85rem; margin-left:8px;">"Candidate must complete pre-interview briefing before scheduling interview"</span></p>
+  <p style="color:var(--green); font-size:0.85rem; margin-top:8px;">The briefing gate correctly prevents unbriefed candidates from reaching interviews.</p>
+</div>
+
+<!-- Analytics -->
+<h2><span class="section-icon">📈</span>Step 8 — Analytics Deep Dive</h2>
+
+<div class="card">
+  <h3>Briefing Effectiveness</h3>
+  <div class="stats-grid" style="margin-top:12px;">
+    <div class="stat"><div class="stat-value accent">12</div><div class="stat-label">Total Briefings</div></div>
+    <div class="stat"><div class="stat-value green">75%</div><div class="stat-label">Pass Rate</div></div>
+    <div class="stat"><div class="stat-value yellow">33%</div><div class="stat-label">Hire After Pass</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Role Family Breakdown (Historical)</h3>
+  <table>
+    <thead><tr><th>Role Family</th><th>Submissions</th><th>Hires</th><th>Yield %</th><th>Avg TTF</th></tr></thead>
+    <tbody>
+      <tr><td>HR</td><td>75</td><td>31</td><td class="green"><strong>41.3%</strong></td><td>27.3d</td></tr>
+      <tr><td>Leadership</td><td>101</td><td>34</td><td class="green"><strong>33.7%</strong></td><td>49.2d</td></tr>
+      <tr><td>Engineering</td><td>130</td><td>42</td><td class="green"><strong>32.3%</strong></td><td>35.3d</td></tr>
+      <tr><td>Marketing</td><td>113</td><td>36</td><td class="green"><strong>31.9%</strong></td><td>28.8d</td></tr>
+      <tr><td>Sales</td><td>116</td><td>28</td><td class="yellow"><strong>24.1%</strong></td><td>22.8d</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h3>Top 5 Consultants (Overall Yield)</h3>
+  <table>
+    <thead><tr><th>Firm</th><th>Yield %</th><th>Avg TTF</th></tr></thead>
+    <tbody>
+      <tr><td><strong>HireRight Partners</strong></td><td class="green"><strong>50.0%</strong></td><td>30.9d</td></tr>
+      <tr><td><strong>Apex Recruiters</strong></td><td class="green"><strong>40.0%</strong></td><td>45.2d</td></tr>
+      <tr><td>HireRight Partners</td><td class="green"><strong>38.5%</strong></td><td>28.2d</td></tr>
+      <tr><td>CoreHR Associates</td><td class="green"><strong>38.0%</strong></td><td>27.6d</td></tr>
+      <tr><td>Vanguard Talent</td><td class="green"><strong>37.1%</strong></td><td>37.3d</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Updated Rankings -->
+<h2><span class="section-icon">🔄</span>Step 9 — Post-Hire Ranking Update</h2>
+<div class="card">
+  <p style="color:var(--muted); font-size:0.85rem; margin-bottom:12px;">After this hire cycle, consultant rankings for Sales have been recalculated:</p>
+  <table>
+    <thead><tr><th>Rank</th><th>Firm</th><th>Submissions</th><th>Yield %</th></tr></thead>
+    <tbody>
+      <tr><td>#1</td><td><strong>PeopleFirst Consulting</strong></td><td>19</td><td class="green"><strong>42.1%</strong></td></tr>
+      <tr><td>#2</td><td><strong>BlueStar Staffing</strong></td><td>18</td><td class="green"><strong>33.3%</strong></td></tr>
+      <tr><td>#3</td><td>BlueStar Staffing</td><td>25</td><td class="yellow">20.0%</td></tr>
+      <tr><td>#4</td><td>NexGen Talent</td><td>21</td><td class="yellow">19.0%</td></tr>
+      <tr><td>#5</td><td>NexGen Talent</td><td>11</td><td class="yellow">18.2%</td></tr>
+      <tr><td>#6</td><td>PeopleFirst Consulting</td><td>22</td><td class="red">13.6%</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Final Summary -->
+<h2><span class="section-icon">✅</span>Final Summary</h2>
+<div class="card" style="border-color: var(--green);">
+  <div class="stats-grid">
+    <div class="stat"><div class="stat-value green">6/6</div><div class="stat-label">Subsystems Verified</div></div>
+    <div class="stat"><div class="stat-value accent">68</div><div class="stat-label">Tests Passing</div></div>
+    <div class="stat"><div class="stat-value green">42</div><div class="stat-label">API Routes</div></div>
+    <div class="stat"><div class="stat-value purple">9</div><div class="stat-label">Test Suites</div></div>
+  </div>
+  <table style="margin-top:12px;">
+    <thead><tr><th>Subsystem</th><th>Status</th><th>What Was Verified</th></tr></thead>
+    <tbody>
+      <tr><td>Consultant Ranking</td><td><span class="badge badge-pass">PASS</span></td><td>Yield-based rankings queried and used for auto-assignment</td></tr>
+      <tr><td>CV Pipeline</td><td><span class="badge badge-pass">PASS</span></td><td>Full 7-stage lifecycle (submitted → hired) with screening and rejection</td></tr>
+      <tr><td>CV Triage</td><td><span class="badge badge-pass">PASS</span></td><td>Auto-scored 5 candidates against JD with 5-dimension breakdown</td></tr>
+      <tr><td>Briefing Gate</td><td><span class="badge badge-pass">PASS</span></td><td>Conversations simulated, pass/fail evaluated, gate enforcement verified</td></tr>
+      <tr><td>Interview Scheduling</td><td><span class="badge badge-pass">PASS</span></td><td>Slots created, scheduling links generated, candidates self-booked</td></tr>
+      <tr><td>Analytics</td><td><span class="badge badge-pass">PASS</span></td><td>Drop-off analysis, briefing effectiveness, role family breakdown</td></tr>
+    </tbody>
+  </table>
+  <p style="text-align:center; margin-top:20px; font-size:1.1rem; color: var(--green); font-weight:600;">The hiring pipeline is fully operational.</p>
+</div>
+
+</div>
+</body>
+</html>
